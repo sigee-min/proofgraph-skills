@@ -47,7 +47,7 @@ Lease:
 Goal: allow `$sigee-spec-author`, `$sigee-implementer`, and `$sigee-reviewer` to run correctly from a minimal command such as `진행해`.
 
 - PM is excluded from this autonomous contract; PM remains user-facing and routing-focused.
-- One run processes exactly one ticket.
+- One run processes the full eligible queue for the role.
 - If no ticket is eligible, run returns no-op and does not modify docs except optional activity note.
 
 ### Eligibility Queue By Role
@@ -69,14 +69,15 @@ Goal: allow `$sigee-spec-author`, `$sigee-implementer`, and `$sigee-reviewer` to
 - Sort by:
   - oldest `updatedAt` first (or board order when timestamp unavailable)
   - lexical ticket title as tie-breaker
-- Pick first candidate only.
+- Process all candidates in sorted order.
 
 ### Lease Protocol (Hard Lock)
 
-- Before editing, call `acquire_document_lease` on selected ticket (TTL 30m default).
-- While working, renew using `renew_document_lease` every ~10m for long tasks.
-- On completion/handoff, release using `release_document_lease`.
-- If lease acquisition fails, skip candidate and try next eligible ticket; if none, return no-op.
+- For each selected ticket:
+  - Before editing, call `acquire_document_lease` (TTL 30m default).
+  - While working, renew using `renew_document_lease` every ~10m for long tasks.
+  - On completion/handoff, release using `release_document_lease`.
+  - If lease acquisition fails, skip that ticket and continue.
 
 ### Handoff And Exit Rules
 

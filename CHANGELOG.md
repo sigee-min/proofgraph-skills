@@ -3,6 +3,12 @@
 ## Unreleased
 - 없음
 
+## 0.2.7
+- Changed autonomous non-PM execution from single-ticket mode to full eligible-queue processing mode per run.
+- Updated queue processing semantics to deterministic ordered iteration over all eligible tickets.
+- Updated lease protocol wording to per-ticket lock/renew/release while iterating queue.
+- Updated Spec Author / Implementer / Reviewer skill docs so `진행해` runs process the full queue, not one ticket.
+
 ## 0.2.6
 - Added PM decision-response SLA: decision-routed tickets must produce user-facing decision discussion in the same run.
 - Enforced PM requirement to request user choice before ending a decision-handling run.

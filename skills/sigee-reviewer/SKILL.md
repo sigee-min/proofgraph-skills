@@ -23,23 +23,26 @@ You are the Reviewer.
 
 When triggered without explicit ticket ID:
 
-- Select one ticket only:
+- Build and process the full eligible queue:
   - status in `Review`
   - `Next Action == $sigee-reviewer`
   - no active lease owned by another actor
 - Deterministic pick:
   - oldest `updatedAt` first (or board order if unavailable)
   - lexical title tie-break
-- Acquire hard lock before edits using `acquire_document_lease`.
-- Renew lock during long work via `renew_document_lease`; release at exit via `release_document_lease`.
-- If lock acquisition fails, skip candidate and try next; if none remain, return no-op.
-- Always update ticket at end: `Status`, `Next Action`, `Lease`, `Evidence Links`.
-- If blocked/fail, include mandatory handoff payload:
+- Process candidates sequentially in the sorted queue.
+- For each ticket:
+  - Acquire hard lock before edits using `acquire_document_lease`.
+  - Renew lock during long work via `renew_document_lease`; release at exit via `release_document_lease`.
+  - If lock acquisition fails, skip this ticket and continue.
+  - Update ticket at end: `Status`, `Next Action`, `Lease`, `Evidence Links`.
+  - If blocked/fail, include mandatory handoff payload:
   - `Failure Reason`
   - `Evidence Links`
   - `Repro/Command`
   - `Required Decision`
   - `Next Action`
+- If no eligible tickets exist, return no-op.
 
 ## No-Delete Policy (Global)
 
