@@ -74,6 +74,30 @@ If any field is missing, keep `Next Action` on PM (or `Blocked` with missing-fie
   - Always provide `parent_document_id` when creating documents.
   - For `create_document_from_template`, never call with `collection_id` only.
 
+### New Server Bootstrap (Global)
+
+On a new Outline server/workspace, PM must bootstrap structure before normal routing.
+
+- Bootstrap order:
+  1. Ensure root anchors exist (create missing anchors).
+  2. Ensure required child lanes exist under anchors.
+  3. Ensure official templates exist/resolved.
+  4. Create initial project docs from templates with explicit parents.
+- Required root anchors:
+  - `00_운영규약`
+  - `01_스펙`
+  - `10_티켓`
+  - `20_핸드오프`
+  - `30_업무보드`
+  - `90_아카이브`
+- Required child lanes:
+  - Under `10_티켓`: `Backlog`, `Ready`, `InProgress`, `Review`, `Done`, `Blocked`
+  - Under `01_스펙`: `10_핵심스펙`, `20_오라클`, `90_아카이브`
+  - Under `30_업무보드`: `10_주간보드`, `20_진행리포트`, `90_아카이브`
+- Persist created/located IDs in project docs:
+  - `템플릿 레지스트리`
+  - `구조 레지스트리` (anchors/lanes IDs)
+
 ## Workflow
 
 ### 1) Load Project Context From Outline (Source of Truth)
@@ -88,6 +112,8 @@ In each task, do this first:
    - Spec/requirements docs (product and technical).
 4. Run root hygiene guard before creating/updating project documents:
    - Read collection tree via `get_collection_structure`.
+   - If required root anchors are missing, create them before any other document creation.
+   - If required child lanes are missing, create them under the correct anchor.
    - Verify root contains only structural anchors:
      - `00_운영규약`, `01_스펙`, `10_티켓`, `20_핸드오프`, `30_업무보드`, `90_아카이브`.
    - If non-anchor docs are at root:
@@ -98,6 +124,7 @@ In each task, do this first:
        - ticket instances -> `10_티켓` (under matching status folder)
        - unresolved/legacy artifacts -> `90_아카이브`
    - Record moved document IDs and reasons in the ticket Evidence Links.
+   - Refresh `구조 레지스트리` with current anchor/lane IDs.
 5. If no relevant collection/docs exist, or required v1 baseline documents are missing, initialize missing scaffolding before work continues:
    - Use Outline official templates (workspace template library), not project-local template documents.
    - Canonical official template names:
@@ -129,6 +156,8 @@ In each task, do this first:
      - `created_at`
      - `last_refreshed_at`
      - `last_actor`
+   - Template registry parent mapping must reference structure registry IDs.
+     - `default_parent_document_id` must point to validated anchor/lane IDs.
    - Treat this registry as a cache, not the source of truth; source of truth is `list_templates` by canonical name.
    - If registry rows are missing/stale, refresh from `list_templates`; if unresolved, rebuild the missing official template from seed and then refresh.
    - If official template bootstrap fails because of MCP/API errors or missing seed, block bootstrap and record the exact failure reason on the ticket.

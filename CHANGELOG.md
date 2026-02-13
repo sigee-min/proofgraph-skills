@@ -3,6 +3,11 @@
 ## Unreleased
 - 없음
 
+## 0.2.3
+- Added new-server bootstrap standard so root anchors/lanes are created before normal workflow on fresh Outline servers.
+- Added required child-lane policy (`10_티켓`, `01_스펙`, `30_업무보드`) and structure registry requirements.
+- Added cross-role guard: Spec Author / Implementer / Reviewer must route back to PM when anchors/lanes are not bootstrapped.
+
 ## 0.2.2
 - Added collection-root hygiene policy and whitelist anchors to prevent root pollution.
 - Enforced explicit `parent_document_id` for all document creation flows (including template-based creation).

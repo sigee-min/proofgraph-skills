@@ -26,6 +26,8 @@ Lease:
 - Deprecation process: mark **DEPRECATED**, write a reason (and replacement link if any), then archive it per the project's convention.
 - Root hygiene: root-level docs are structural anchors only:
   - `00_운영규약`, `01_스펙`, `10_티켓`, `20_핸드오프`, `30_업무보드`, `90_아카이브`
+- On a new server/workspace, PM must bootstrap anchors/lanes first.
+- If required anchors/lanes are missing, set `Next Action` to PM and wait for bootstrap completion.
 
 ## Role-State Guidance (Recommended)
 

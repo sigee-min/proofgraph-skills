@@ -28,6 +28,22 @@ Lease:
   - `00_운영규약`, `01_스펙`, `10_티켓`, `20_핸드오프`, `30_업무보드`, `90_아카이브`
 - Never create project documents at root; always pass `parent_document_id`.
 
+## New Server Bootstrap Standard (PM)
+
+When migrating to a new Outline server/workspace, PM must run bootstrap in this order:
+
+1. Ensure root anchors exist:
+  - `00_운영규약`, `01_스펙`, `10_티켓`, `20_핸드오프`, `30_업무보드`, `90_아카이브`
+2. Ensure required child lanes:
+  - `10_티켓` -> `Backlog`, `Ready`, `InProgress`, `Review`, `Done`, `Blocked`
+  - `01_스펙` -> `10_핵심스펙`, `20_오라클`, `90_아카이브`
+  - `30_업무보드` -> `10_주간보드`, `20_진행리포트`, `90_아카이브`
+3. Ensure official templates exist (resolve via `list_templates`, bootstrap if missing).
+4. Create baseline project docs only with explicit `parent_document_id`.
+5. Persist IDs into:
+  - `구조 레지스트리` (anchors/lanes)
+  - `템플릿 레지스트리` (templates + default parents)
+
 ## Role-State Guidance (Recommended)
 
 - Project Manager: `Backlog` and `Ready` (use `Blocked` for missing decisions/scope/evidence)
@@ -94,3 +110,4 @@ Before normal routing/creation:
   - ticket instance -> `10_티켓` under correct status
   - unknown legacy -> `90_아카이브`
 - Record all move operations in Evidence Links.
+- If anchors/lanes are missing, create and then write IDs into `구조 레지스트리`.
