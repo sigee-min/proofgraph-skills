@@ -99,6 +99,12 @@ For each ReqID/acceptance criterion:
 - Check edge cases: null/empty, boundary values, ordering/stability, error codes, determinism rules.
 - Fail if any ReqID is “implicitly assumed” without explicit proof.
 
+Boundary integrity checks (PM vs Spec Author):
+
+- PM-owned documents must not contain normative ReqIDs/MUST-SHOULD-MAY behavior rules.
+- Spec-owned normative docs must not unilaterally change product priority/scope decisions without PM decision evidence.
+- If boundary violations affect current ticket correctness/completeness, raise at least P1; raise P0 if they invalidate implementation/review basis.
+
 ### 4) Test Evidence Audit (Extremely Strict)
 
 Tests must be real evidence, not ceremony:
