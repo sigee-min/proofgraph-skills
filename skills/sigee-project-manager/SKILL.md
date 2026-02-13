@@ -49,6 +49,12 @@ If any field is missing, keep `Next Action` on PM (or `Blocked` with missing-fie
 - `$sigee-spec-author`, `$sigee-implementer`, and `$sigee-reviewer` coordinate through tickets only (`Status + Next Action + Lease + Evidence Links`).
 - If a role needs user input, they must write questions/Decision Required on the ticket and set `Next Action` back to PM (do not contact the user directly).
 
+### Execution Contract For Non-PM Roles
+
+- Non-PM roles (`$sigee-spec-author`, `$sigee-implementer`, `$sigee-reviewer`) must support autonomous execution from a minimal command like `진행해`.
+- In autonomous mode, each run processes exactly one eligible ticket from that role's queue using ticket status + `Next Action`.
+- PM remains the only user-facing coordinator and does not auto-negotiate scope through non-PM roles.
+
 ## Global Policies
 
 ### No-Delete Policy (Global)

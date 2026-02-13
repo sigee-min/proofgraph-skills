@@ -3,6 +3,13 @@
 ## Unreleased
 - 없음
 
+## 0.2.4
+- Added non-PM autonomous execution contract for `진행해`: one-ticket-per-run, deterministic queue pick, no-op on empty queue.
+- Added hard lease protocol requirements (`acquire_document_lease`, `renew_document_lease`, `release_document_lease`) across role workflows.
+- Added mandatory failure handoff payload schema (`Failure Reason`, `Evidence Links`, `Repro/Command`, `Required Decision`, `Next Action`).
+- Updated Spec Author / Implementer / Reviewer skill docs to execute from queue even without explicit ticket ID.
+- Updated PM skill to explicitly require autonomous non-PM execution contract while keeping PM as user-facing coordinator.
+
 ## 0.2.3
 - Added new-server bootstrap standard so root anchors/lanes are created before normal workflow on fresh Outline servers.
 - Added required child-lane policy (`10_티켓`, `01_스펙`, `30_업무보드`) and structure registry requirements.

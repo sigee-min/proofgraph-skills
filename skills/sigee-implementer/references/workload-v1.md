@@ -43,6 +43,62 @@ Lease:
 - `$sigee-spec-author` is the default first stop for new work; `$sigee-implementer` starts after a ticket is `Ready`.
 - Roles communicate by updating the ticket, not by negotiating directly with users.
 
+## Autonomous Execution Contract (Non-PM)
+
+Goal: allow `$sigee-spec-author`, `$sigee-implementer`, and `$sigee-reviewer` to run correctly from a minimal command such as `진행해`.
+
+- PM is excluded from this autonomous contract; PM remains user-facing and routing-focused.
+- One run processes exactly one ticket.
+- If no ticket is eligible, run returns no-op and does not modify docs except optional activity note.
+
+### Eligibility Queue By Role
+
+- Spec Author:
+  - status in `Backlog|Ready`
+  - `Next Action == $sigee-spec-author`
+- Implementer:
+  - status in `Ready|InProgress|Blocked` (resume path)
+  - `Next Action == $sigee-implementer`
+- Reviewer:
+  - status in `Review`
+  - `Next Action == $sigee-reviewer`
+
+### Deterministic Pick Rule
+
+- Pick only tickets meeting role eligibility.
+- Exclude tickets with active lease owned by another actor.
+- Sort by:
+  - oldest `updatedAt` first (or board order when timestamp unavailable)
+  - lexical ticket title as tie-breaker
+- Pick first candidate only.
+
+### Lease Protocol (Hard Lock)
+
+- Before editing, call `acquire_document_lease` on selected ticket (TTL 30m default).
+- While working, renew using `renew_document_lease` every ~10m for long tasks.
+- On completion/handoff, release using `release_document_lease`.
+- If lease acquisition fails, skip candidate and try next eligible ticket; if none, return no-op.
+
+### Handoff And Exit Rules
+
+- Every run must update:
+  - `Status` + folder alignment
+  - `Next Action`
+  - `Lease` metadata
+  - `Evidence Links`
+- Never move ticket to `Done` unless current role is Reviewer and review passed.
+- If blocked by missing product decision or missing bootstrap context, set `Next Action` to PM and move to `Blocked`.
+
+## Failure Handoff Schema (Mandatory)
+
+When a run fails or blocks, write this payload to the ticket:
+
+- `Failure Reason`: concise root cause.
+- `Evidence Links`: logs, commands, docs, commits, screenshots.
+- `Repro/Command`: exact command(s) and environment notes.
+- `Required Decision`: what decision is needed and options.
+- `Next Action`: target role (`$sigee-project-manager`, `$sigee-spec-author`, `$sigee-implementer`, `$sigee-reviewer`).
+
 ## Cleanroom Roles (Boundary)
 
 - Spec Author: writes behavior specs from observed behavior; does not implement or review code.

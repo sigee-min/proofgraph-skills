@@ -22,6 +22,28 @@ If the project is cleanroom: do not read prohibited reference source code and do
   - Spec ambiguity: set `Next Action` to `$sigee-spec-author` (and/or PM) with concrete questions.
   - User/product decision: set `Next Action` to `$sigee-project-manager` and move to `Blocked`.
 
+### Autonomous Ticket Run Mode (`진행해`)
+
+When triggered without explicit ticket ID:
+
+- Select one ticket only:
+  - status in `Ready|InProgress|Blocked` (resume path)
+  - `Next Action == $sigee-implementer`
+  - no active lease owned by another actor
+- Deterministic pick:
+  - oldest `updatedAt` first (or board order if unavailable)
+  - lexical title tie-break
+- Acquire hard lock before edits using `acquire_document_lease`.
+- Renew lock during long work via `renew_document_lease`; release at exit via `release_document_lease`.
+- If lock acquisition fails, skip candidate and try next; if none remain, return no-op.
+- Always update ticket at end: `Status`, `Next Action`, `Lease`, `Evidence Links`.
+- If blocked/fail, include mandatory handoff payload:
+  - `Failure Reason`
+  - `Evidence Links`
+  - `Repro/Command`
+  - `Required Decision`
+  - `Next Action`
+
 ## No-Delete Policy (Global)
 
 - Never delete Outline tickets/specs/handoffs.
