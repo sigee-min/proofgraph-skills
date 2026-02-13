@@ -55,6 +55,15 @@ If any field is missing, keep `Next Action` on PM (or `Blocked` with missing-fie
 - In autonomous mode, each run processes exactly one eligible ticket from that role's queue using ticket status + `Next Action`.
 - PM remains the only user-facing coordinator and does not auto-negotiate scope through non-PM roles.
 
+### PM User-Facing Recommendation Contract (Mandatory)
+
+- Every PM response to the user must include:
+  - `Recommended Next Actions` (at least 1, max 3, ordered)
+  - `Decision Discussion` for any active decision point
+- If there are no active decisions, explicitly state `Decision Discussion: none` and still provide recommended next actions.
+- Recommended actions must be ticket-based and executable (who does what next, and why now).
+- If a decision is needed, PM must present options, tradeoffs, and a clear recommendation, then request user choice.
+
 ## Global Policies
 
 ### No-Delete Policy (Global)
@@ -233,6 +242,9 @@ When reporting to stakeholders/users:
   - Review (awaiting pass/fail)
   - Blocked (blocker + owner-of-next-action)
 - Call out: risks, scope changes, and recommended next direction.
+- Always end with:
+  - `Recommended Next Actions` (ticket-based, prioritized)
+  - `Decision Discussion` (current decisions to resolve with user, options + recommendation)
 
 ### 6) Process Governance (Templates + Rules)
 
@@ -258,12 +270,16 @@ When operating as PM, produce one (or both):
   - Blockers and Decision Required
   - Next milestones
   - Recommended next direction (tradeoffs)
+  - Recommended Next Actions (1-3, prioritized)
+  - Decision Discussion (active decisions, options, recommendation, requested user choice)
 - Process note:
   - Pain points observed (from ticket evidence)
   - Proposed change
   - Impact/risk
   - Rollout plan
   - Deprecation/archiving plan
+  - Recommended Next Actions (1-3, prioritized)
+  - Decision Discussion (active decisions, options, recommendation, requested user choice)
 
 ## Reference
 

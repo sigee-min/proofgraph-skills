@@ -1,28 +1,28 @@
 name = "sigee-workflow-skills"
 description = "Codex workflow skills for specification, implementation, review, and project-management. Managed as a portable deployment package independent of any one machine."
-version = "0.2.4"
+version = "0.2.5"
 registry_prefix = "sigee"
 
 [[skills]]
 name = "sigee-spec-author"
 path = "skills/sigee-spec-author"
-version = "0.2.4"
+version = "0.2.5"
 maintainer = "local"
 
 [[skills]]
 name = "sigee-implementer"
 path = "skills/sigee-implementer"
-version = "0.2.4"
+version = "0.2.5"
 maintainer = "local"
 
 [[skills]]
 name = "sigee-reviewer"
 path = "skills/sigee-reviewer"
-version = "0.2.4"
+version = "0.2.5"
 maintainer = "local"
 
 [[skills]]
 name = "sigee-project-manager"
 path = "skills/sigee-project-manager"
-version = "0.2.4"
+version = "0.2.5"
 maintainer = "local"

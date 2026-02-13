@@ -3,6 +3,11 @@
 ## Unreleased
 - 없음
 
+## 0.2.5
+- Enforced PM user-facing response contract: every PM response must include `Recommended Next Actions` and `Decision Discussion`.
+- Added PM rule to explicitly provide decision options/tradeoffs/recommendation and request user choice when decision is pending.
+- Updated PM workload reference to keep recommendation/discussion format consistent across environments.
+
 ## 0.2.4
 - Added non-PM autonomous execution contract for `진행해`: one-ticket-per-run, deterministic queue pick, no-op on empty queue.
 - Added hard lease protocol requirements (`acquire_document_lease`, `renew_document_lease`, `release_document_lease`) across role workflows.

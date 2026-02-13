@@ -57,6 +57,9 @@ When migrating to a new Outline server/workspace, PM must run bootstrap in this 
 - PM routes work to roles via tickets (`Next Action` + Evidence Links).
 - Default routing for new work: create/update a ticket in `Backlog` and set `Next Action` to `$sigee-spec-author`.
 - Roles coordinate by updating the ticket (not by direct user negotiation).
+- PM user responses must always include:
+  - `Recommended Next Actions` (1-3 prioritized, ticket-based)
+  - `Decision Discussion` (active decisions, options, PM recommendation, requested user choice)
 
 ## Autonomous Execution Contract (Non-PM)
 
