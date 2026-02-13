@@ -60,6 +60,10 @@ When migrating to a new Outline server/workspace, PM must run bootstrap in this 
 - PM user responses must always include:
   - `Recommended Next Actions` (1-3 prioritized, ticket-based)
   - `Decision Discussion` (active decisions, options, PM recommendation, requested user choice)
+- PM must also provide planning-advisor outputs for major user requests:
+  - `Feasibility Verdict` (`Feasible|Risky|Unrealistic Now`) based on vibe-coding cycle estimate
+  - key assumptions + blockers + MVP de-scope/re-sequence recommendation
+  - `User Scenario/UI Advisory` (scenario steps + state matrix + simplification notes)
 - PM decision response SLA:
   - If ticket is routed to PM for decision, PM must produce decision discussion in the same run.
   - PM must request user choice before ending the run.

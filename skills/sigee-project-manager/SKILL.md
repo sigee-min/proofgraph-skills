@@ -84,6 +84,33 @@ Every PM decision discussion must include these fields:
 - `User Choice`: selected option (or `Pending` if waiting).
 - `Applied At`: ISO timestamp when choice was confirmed/applied.
 
+### Planning Clarification + Reality Check Advisor (Mandatory)
+
+- PM must act as a planning advisor when user requests are vague.
+- Before routing work, PM must convert vague input into a concrete plan packet:
+  - `Objective`
+  - `Target User`
+  - `Primary User Scenario`
+  - `Success Signal`
+  - `Scope In`
+  - `Scope Out`
+  - `Constraints`
+  - `Open Risks`
+- PM must run a strict feasibility check using vibe-coding productivity assumptions:
+  - one cycle = prompt -> implementation -> tests -> fix loop
+  - `Feasible`: <= 3 cycles, known stack, low external dependency
+  - `Risky`: 4-8 cycles, multi-module integration or moderate dependency risk
+  - `Unrealistic Now`: > 8 cycles, unknown architecture, or high external blocking risk
+- PM must explicitly output:
+  - `Feasibility Verdict` (`Feasible|Risky|Unrealistic Now`)
+  - key assumptions
+  - major blockers
+  - de-scope/re-sequence recommendation for MVP
+- PM must provide UI/UX advisory artifacts with each major planning response:
+  - user scenario steps (happy path + key edge path)
+  - screen/state list (loading/empty/error/success)
+  - interaction risks and simplification suggestions
+
 ## Global Policies
 
 ### No-Delete Policy (Global)
@@ -250,6 +277,9 @@ Produce planning artifacts that are easy for `$sigee-spec-author` and `$sigee-im
 - UI/UX flows (screens, states, empty/error states).
 - Acceptance criteria that can be turned into ReqIDs and tests.
 - Open questions and decisions needed (Decision Required).
+- Feasibility verdict with assumptions (`Feasible|Risky|Unrealistic Now`).
+- MVP de-scope/re-sequencing suggestions if delivery risk is high.
+- User scenario pack and UI state matrix for implementation guidance.
 
 ### 5) Progress Reporting (Evidence-Based)
 
@@ -292,6 +322,8 @@ When operating as PM, produce one (or both):
   - Recommended next direction (tradeoffs)
   - Recommended Next Actions (1-3, prioritized)
   - Decision Discussion (active decisions, options, recommendation, requested user choice)
+  - Feasibility Verdict (vibe-coding cycle estimate + assumptions)
+  - User Scenario/UI Advisory (core flow + key states + simplification notes)
 - Process note:
   - Pain points observed (from ticket evidence)
   - Proposed change
@@ -300,6 +332,8 @@ When operating as PM, produce one (or both):
   - Deprecation/archiving plan
   - Recommended Next Actions (1-3, prioritized)
   - Decision Discussion (active decisions, options, recommendation, requested user choice)
+  - Feasibility Verdict (vibe-coding cycle estimate + assumptions)
+  - User Scenario/UI Advisory (core flow + key states + simplification notes)
 
 ## Reference
 

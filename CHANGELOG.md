@@ -3,6 +3,13 @@
 ## Unreleased
 - 없음
 
+## 0.2.8
+- Added PM planning-advisor mandate for vague user requests: convert ambiguity into concrete planning packet before routing.
+- Added strict feasibility gate based on vibe-coding productivity cycles with verdicts (`Feasible|Risky|Unrealistic Now`).
+- Added mandatory PM output of assumptions, blockers, and MVP de-scope/re-sequencing recommendations.
+- Added mandatory `User Scenario/UI Advisory` output (scenario steps, state matrix, simplification notes).
+- Updated PM workload reference so advisory/feasibility format is consistently applied across environments.
+
 ## 0.2.7
 - Changed autonomous non-PM execution from single-ticket mode to full eligible-queue processing mode per run.
 - Updated queue processing semantics to deterministic ordered iteration over all eligible tickets.
