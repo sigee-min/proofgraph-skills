@@ -46,13 +46,14 @@ Lease:
 
 ## Outline Templates (v1)
 
-When creating new Outline documents, always use `create_document_from_template` with the canonical template names:
+When creating new Outline documents, always use `create_document_from_template` with Outline official templates and canonical names:
 
-- Ops rules: `운영규약`
-- Agent ticket: `에이전트 티켓`
-- Handoff note: `핸드오프 노트`
-- Weekly board: `주간 업무 보드`
+- Ops rules: `[공식 템플릿] 무소유권 운영규약`
+- Agent ticket: `[공식 템플릿] 무소유권 에이전트 티켓`
+- Handoff note: `[공식 템플릿] 무소유권 핸드오프 노트`
+- Weekly board: `[공식 템플릿] 무소유권 업무 보드(주간)`
 
 Recommended implementation:
-- Resolve each name via the project's template registry in the collection first.
-- If unresolved, resolve from the PM workflow reference and record the resolved template document IDs.
+- Resolve each name by exact match from `list_templates`.
+- If unresolved, do not create project-local template docs; return `Next Action` to PM to bootstrap official templates and retry.
+- Never create template source documents inside the project collection.

@@ -42,31 +42,45 @@ In each task, do this first:
    - Operating rules (tickets/status/lease discipline).
    - Work board(s) and current tickets by status.
    - Spec/requirements docs (product and technical).
-4. If no relevant collection/docs exist, or required v1 baseline template-backed documents are missing, initialize missing project scaffolding before work continues:
-   - Build the v1 baseline as actual template-backed documents in the project collection from canonical template names:
-     - 운영규약
-     - 에이전트 티켓
-     - 핸드오프 노트
-     - 주간 업무 보드
-   - Resolve template definitions for each name from the local collection registry first, then `/references/workload-v1.md`.
-   - Resolve with `create_document_from_template` using the resolved template reference.
-   - Persist the resulting template doc IDs into a dedicated "템플릿 레지스트리" note in the collection using this schema:
-     - template_name
-     - template_doc_id
-     - source_reference
-     - status
-     - created_at
-     - last_refreshed_at
-     - last_actor
-   - Treat the registry as canonical; future document creation must read from it first.
-   - If the registry entry is missing or stale, regenerate that template via `create_document_from_template` and update registry row first.
-   - If template creation fails due to missing template source or MCP/API failure, block the bootstrap and record the exact failure reason on the ticket.
-   - Apply the default ticket workflow (`Backlog -> Ready -> InProgress -> Review -> Done`, with `Blocked` exception).
+4. If no relevant collection/docs exist, or required v1 baseline documents are missing, initialize missing scaffolding before work continues:
+   - Use Outline official templates (workspace template library), not project-local template documents.
+   - Canonical official template names:
+     - `[공식 템플릿] 무소유권 운영규약`
+     - `[공식 템플릿] 무소유권 에이전트 티켓`
+     - `[공식 템플릿] 무소유권 핸드오프 노트`
+     - `[공식 템플릿] 무소유권 업무 보드(주간)`
+   - Resolve each template by exact name via `list_templates`.
+   - If any canonical template is missing:
+     - Create or reuse workspace collection `무소유권 템플릿 카탈로그`.
+     - Create source documents in that collection from local seed files:
+       - `/references/template-seeds/ops-rules.md`
+       - `/references/template-seeds/agent-ticket.md`
+       - `/references/template-seeds/handoff-note.md`
+       - `/references/template-seeds/weekly-board.md`
+     - Register each source doc as an Outline official template with `create_template_from_document`.
+     - Re-run `list_templates` and verify all canonical names resolve.
+   - Create project documents only via `create_document_from_template` using resolved official template IDs.
+   - Never create template source documents inside the target project collection.
+   - Persist mappings into `템플릿 레지스트리` in the project collection using this schema:
+     - `template_name`
+     - `template_id`
+     - `source_collection`
+     - `source_document_id`
+     - `source_seed_path`
+     - `status`
+     - `created_at`
+     - `last_refreshed_at`
+     - `last_actor`
+   - Treat this registry as a cache, not the source of truth; source of truth is `list_templates` by canonical name.
+   - If registry rows are missing/stale, refresh from `list_templates`; if unresolved, rebuild the missing official template from seed and then refresh.
+   - If official template bootstrap fails because of MCP/API errors or missing seed, block bootstrap and record the exact failure reason on the ticket.
+   - Apply default ticket workflow (`Backlog -> Ready -> InProgress -> Review -> Done`, with `Blocked` exception).
    - Publish initial collaboration conventions so all roles use Ticket-first + PM-front-door.
-6. Template reuse rule:
-   - For any future document creation, read the registry and use active rows as the canonical source.
-   - If registry templates are stale or incomplete, PM regenerates them in-place and updates `last_refreshed_at` before continuing.
-7. If Outline access fails, briefly report "Outline unavailable" and continue, but do not proceed with ticket operations.
+5. Template reuse rule:
+   - For any new project document, resolve template ID from `list_templates` by canonical template name first.
+   - Use `템플릿 레지스트리` only as cached metadata and refresh it after each bootstrap/repair.
+   - Never backfill template source docs into the project collection.
+6. If Outline access fails, briefly report "Outline unavailable" and continue, but do not proceed with ticket operations.
 
 ### 2) Intake + Ticket Routing (PM as Front Door)
 
