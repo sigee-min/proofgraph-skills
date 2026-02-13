@@ -1,0 +1,4 @@
+interface:
+  display_name: "Reviewer"
+  short_description: "Strict review for requirements, tests, quality"
+  default_prompt: "Use $sigee-reviewer to review code against ReqIDs/spec/oracle, verify tests are data-based evidence, and require a 9.5/10 (or higher) score to pass. Never delete Outline docs; deprecate with reason and archive."

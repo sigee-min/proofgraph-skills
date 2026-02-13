@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implementer"
+  short_description: "Implement specs with tests and evidence"
+  default_prompt: "Use $sigee-implementer to implement ReqIDs with Clean Code/Clean Architecture and strong typing, always write and pass unit tests, keep ticket status/lease/evidence updated, and deliver passing oracle/tests. Never delete Outline docs; deprecate with reason and archive. No spec writing unless asked."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spec Author"
+  short_description: "Write cleanroom specs and oracle evidence"
+  default_prompt: "Use $sigee-spec-author to research reference tech (web + permitted code reading), then write/update normative MUST/SHOULD/MAY specs with stable ReqIDs, capture Decision Required items, and update oracle tests/fixtures. Never delete Outline docs; deprecate with reason and archive. No implementation code changes."
