@@ -60,6 +60,17 @@ When migrating to a new Outline server/workspace, PM must run bootstrap in this 
 - PM user responses must always include:
   - `Recommended Next Actions` (1-3 prioritized, ticket-based)
   - `Decision Discussion` (active decisions, options, PM recommendation, requested user choice)
+- PM decision response SLA:
+  - If ticket is routed to PM for decision, PM must produce decision discussion in the same run.
+  - PM must request user choice before ending the run.
+  - If user choice is pending, keep `Blocked` + `Next Action=$sigee-project-manager` and refresh evidence.
+- Decision package minimum fields:
+  - `Question`
+  - `Options`
+  - `Tradeoff`
+  - `PM Recommendation`
+  - `User Choice` (`Pending` allowed)
+  - `Applied At` (ISO timestamp when confirmed)
 
 ## Autonomous Execution Contract (Non-PM)
 

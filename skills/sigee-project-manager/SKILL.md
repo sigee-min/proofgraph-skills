@@ -64,6 +64,26 @@ If any field is missing, keep `Next Action` on PM (or `Blocked` with missing-fie
 - Recommended actions must be ticket-based and executable (who does what next, and why now).
 - If a decision is needed, PM must present options, tradeoffs, and a clear recommendation, then request user choice.
 
+### PM Decision Response SLA (Mandatory)
+
+- When a ticket is routed to PM with unresolved decisions (`Next Action == $sigee-project-manager` due to Decision Required), PM must update user-facing decision discussion in the same run.
+- PM must not end the run without:
+  - decision package completion (below)
+  - explicit user choice request
+  - updated ticket `Next Action`
+- If user input is not yet available, keep ticket in `Blocked`, maintain PM as `Next Action`, and refresh `Evidence Links` with the latest decision context.
+
+### Decision Package (Minimum Fields)
+
+Every PM decision discussion must include these fields:
+
+- `Question`: exact decision to make.
+- `Options`: mutually exclusive options (A/B/...) with concise description.
+- `Tradeoff`: impact comparison (scope, risk, cost, schedule, quality).
+- `PM Recommendation`: one recommended option and rationale.
+- `User Choice`: selected option (or `Pending` if waiting).
+- `Applied At`: ISO timestamp when choice was confirmed/applied.
+
 ## Global Policies
 
 ### No-Delete Policy (Global)

@@ -3,6 +3,12 @@
 ## Unreleased
 - 없음
 
+## 0.2.6
+- Added PM decision-response SLA: decision-routed tickets must produce user-facing decision discussion in the same run.
+- Enforced PM requirement to request user choice before ending a decision-handling run.
+- Added mandatory decision package fields: `Question`, `Options`, `Tradeoff`, `PM Recommendation`, `User Choice`, `Applied At`.
+- Updated PM workload reference to keep SLA and decision-packet format consistent across environments.
+
 ## 0.2.5
 - Enforced PM user-facing response contract: every PM response must include `Recommended Next Actions` and `Decision Discussion`.
 - Added PM rule to explicitly provide decision options/tradeoffs/recommendation and request user choice when decision is pending.
