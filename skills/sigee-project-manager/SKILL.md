@@ -60,6 +60,20 @@ If any field is missing, keep `Next Action` on PM (or `Blocked` with missing-fie
 
 - Never move tickets to `Done`. Only `$sigee-reviewer` may move `Review -> Done`.
 
+### Collection Root Hygiene (Global)
+
+- Root-level documents are limited to structural anchors only:
+  - `00_운영규약`
+  - `01_스펙`
+  - `10_티켓`
+  - `20_핸드오프`
+  - `30_업무보드`
+  - `90_아카이브`
+- PM must prevent root pollution:
+  - Do not create spec/oracle/plan/report/ticket instances at collection root.
+  - Always provide `parent_document_id` when creating documents.
+  - For `create_document_from_template`, never call with `collection_id` only.
+
 ## Workflow
 
 ### 1) Load Project Context From Outline (Source of Truth)
@@ -72,7 +86,19 @@ In each task, do this first:
    - Operating rules (tickets/status/lease discipline).
    - Work board(s) and current tickets by status.
    - Spec/requirements docs (product and technical).
-4. If no relevant collection/docs exist, or required v1 baseline documents are missing, initialize missing scaffolding before work continues:
+4. Run root hygiene guard before creating/updating project documents:
+   - Read collection tree via `get_collection_structure`.
+   - Verify root contains only structural anchors:
+     - `00_운영규약`, `01_스펙`, `10_티켓`, `20_핸드오프`, `30_업무보드`, `90_아카이브`.
+   - If non-anchor docs are at root:
+     - Re-home them using `move_document` by type:
+       - spec/oracle/architecture docs -> `01_스펙`
+       - PM plans/reports/roadmaps -> `30_업무보드`
+       - handoff notes -> `20_핸드오프`
+       - ticket instances -> `10_티켓` (under matching status folder)
+       - unresolved/legacy artifacts -> `90_아카이브`
+   - Record moved document IDs and reasons in the ticket Evidence Links.
+5. If no relevant collection/docs exist, or required v1 baseline documents are missing, initialize missing scaffolding before work continues:
    - Use Outline official templates (workspace template library), not project-local template documents.
    - Canonical official template names:
      - `[공식 템플릿] 무소유권 운영규약`
@@ -89,7 +115,7 @@ In each task, do this first:
        - `/references/template-seeds/weekly-board.md`
      - Register each source doc as an Outline official template with `create_template_from_document`.
      - Re-run `list_templates` and verify all canonical names resolve.
-   - Create project documents only via `create_document_from_template` using resolved official template IDs.
+   - Create project documents only via `create_document_from_template` using resolved official template IDs and explicit `parent_document_id`.
    - Never create template source documents inside the target project collection.
    - Persist mappings into `템플릿 레지스트리` in the project collection using this schema:
      - `template_name`
@@ -97,6 +123,8 @@ In each task, do this first:
      - `source_collection`
      - `source_document_id`
      - `source_seed_path`
+     - `default_parent_anchor`
+     - `default_parent_document_id`
      - `status`
      - `created_at`
      - `last_refreshed_at`
@@ -106,11 +134,13 @@ In each task, do this first:
    - If official template bootstrap fails because of MCP/API errors or missing seed, block bootstrap and record the exact failure reason on the ticket.
    - Apply default ticket workflow (`Backlog -> Ready -> InProgress -> Review -> Done`, with `Blocked` exception).
    - Publish initial collaboration conventions so all roles use Ticket-first + PM-front-door.
-5. Template reuse rule:
+6. Template reuse rule:
    - For any new project document, resolve template ID from `list_templates` by canonical template name first.
+   - Resolve destination parent first from root anchors, then write `default_parent_document_id` into registry.
+   - Document create calls must include both `template_id` and `parent_document_id`.
    - Use `템플릿 레지스트리` only as cached metadata and refresh it after each bootstrap/repair.
    - Never backfill template source docs into the project collection.
-6. If Outline access fails, briefly report "Outline unavailable" and continue, but do not proceed with ticket operations.
+7. If Outline access fails, briefly report "Outline unavailable" and continue, but do not proceed with ticket operations.
 
 ### 2) Intake + Ticket Routing (PM as Front Door)
 

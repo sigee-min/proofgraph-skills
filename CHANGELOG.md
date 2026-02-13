@@ -3,6 +3,13 @@
 ## Unreleased
 - 없음
 
+## 0.2.2
+- Added collection-root hygiene policy and whitelist anchors to prevent root pollution.
+- Enforced explicit `parent_document_id` for all document creation flows (including template-based creation).
+- Added PM root guard routine (`get_collection_structure` + `move_document`) and mandatory re-homing policy.
+- Extended template registry schema with `default_parent_anchor` and `default_parent_document_id`.
+- Applied root-hygiene template/creation constraints across PM/Spec Author/Implementer/Reviewer workload references.
+
 ## 0.2.1
 - Added strict PM-vs-Spec boundary contract in `sigee-project-manager` and `sigee-spec-author`.
 - Added PM Brief gate before routing to Spec Author.

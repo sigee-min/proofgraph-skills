@@ -24,6 +24,9 @@ Lease:
 
 - No-delete: never delete Outline tickets/specs/handoffs/boards. Deprecate with reason and archive.
 - Done exclusivity: only `$sigee-reviewer` may move tickets to `Done`.
+- Root hygiene: root-level documents are structural anchors only:
+  - `00_운영규약`, `01_스펙`, `10_티켓`, `20_핸드오프`, `30_업무보드`, `90_아카이브`
+- Never create project documents at root; always pass `parent_document_id`.
 
 ## Role-State Guidance (Recommended)
 
@@ -56,6 +59,7 @@ Recommended implementation:
   - Register as official template with `create_template_from_document`.
   - Re-run `list_templates` to verify resolution.
 - Never create template source documents inside the project collection.
+- Always create from template with explicit `parent_document_id` (no collection-root creation).
 
 ## Template Registry (Project-local)
 
@@ -68,6 +72,8 @@ Project-local template registry is required before creating new role documents, 
   - `source_collection`: template source collection name (for rebuild).
   - `source_document_id`: source document id used to create the official template.
   - `source_seed_path`: local seed path under `/references/template-seeds/`.
+  - `default_parent_anchor`: one of `00_운영규약|01_스펙|10_티켓|20_핸드오프|30_업무보드|90_아카이브`.
+  - `default_parent_document_id`: resolved parent doc id for creation target.
   - `status`: `active` | `deprecated`.
   - `created_at`: ISO timestamp.
   - `last_refreshed_at`: ISO timestamp.
@@ -75,3 +81,16 @@ Project-local template registry is required before creating new role documents, 
 - On every create/update cycle: use only rows with `status=active`.
 - Source of truth is `list_templates` by canonical name.
 - If cache rows are missing or stale, PM refreshes registry from `list_templates` before work begins.
+
+## Root Guard Routine (PM)
+
+Before normal routing/creation:
+
+- Read tree via `get_collection_structure`.
+- If non-anchor docs are found at root, move them:
+  - spec/oracle -> `01_스펙`
+  - PM plan/report -> `30_업무보드`
+  - handoff -> `20_핸드오프`
+  - ticket instance -> `10_티켓` under correct status
+  - unknown legacy -> `90_아카이브`
+- Record all move operations in Evidence Links.

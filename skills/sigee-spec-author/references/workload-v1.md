@@ -23,6 +23,8 @@ Lease:
 
 - Never delete Outline tickets/specs/handoffs.
 - Deprecation process: mark **DEPRECATED**, write a reason (and replacement link if any), then archive it per the project's convention.
+- Root hygiene: root-level docs are structural anchors only:
+  - `00_운영규약`, `01_스펙`, `10_티켓`, `20_핸드오프`, `30_업무보드`, `90_아카이브`
 
 ## Role-State Guidance (Recommended)
 
@@ -57,3 +59,4 @@ Recommended implementation:
 - Resolve each name by exact match from `list_templates`.
 - If unresolved, do not create project-local template docs; return `Next Action` to PM to bootstrap official templates and retry.
 - Never create template source documents inside the project collection.
+- Never create documents at collection root; require explicit `parent_document_id`.
