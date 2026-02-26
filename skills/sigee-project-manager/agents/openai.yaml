@@ -1,4 +1,0 @@
-interface:
-  display_name: "Project Manager"
-  short_description: "Plan UI/UX, run boards, report progress"
-  default_prompt: "Use $sigee-project-manager to plan requirements/UI-UX, manage Outline boards and tickets, and report evidence-based progress, risks, and next direction (never delete docs; deprecate+archive; never move tickets to Done)."

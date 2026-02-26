@@ -1,3 +1,35 @@
 .DS_Store
 /.cache
 Thumbs.db
+
+# Runtime workspace outputs (non-governed, ephemeral)
+.codex/
+.runtime/
+
+# Generated upstream mirrors (rebuild with sync scripts)
+skills/coolify-cli-infra-manager/references/upstream/
+
+# >>> SIGEE_GITIGNORE_POLICY >>>
+# .sigee governance: ignore runtime artifacts, track policy assets.
+.sigee/runtime/
+.sigee/tmp/
+.sigee/locks/
+.sigee/evidence/
+.sigee/reports/
+
+# Keep repository-governed assets tracked.
+!.sigee/README.md
+!.sigee/policies/
+!.sigee/policies/**
+!.sigee/templates/
+!.sigee/templates/**
+!.sigee/scenarios/
+!.sigee/scenarios/**
+!.sigee/dag/
+!.sigee/dag/schema/
+!.sigee/dag/schema/**
+!.sigee/dag/pipelines/
+!.sigee/dag/pipelines/**
+!.sigee/migrations/
+!.sigee/migrations/**
+# <<< SIGEE_GITIGNORE_POLICY <<<
