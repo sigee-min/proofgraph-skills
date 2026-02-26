@@ -1,4 +1,4 @@
-name = "sigee-workflow-skills"
-description = "Codex workflow skills for specification, implementation, review, and project-management. Managed as a portable deployment package independent of any one machine."
+name = "proofgraph-skills"
+description = "Planner-centric Codex skills for DAG-driven execution, strict test gates, evidence-based completion, and archive-backed runtime orchestration."
 version = "0.4.0"
 registry_prefix = "sigee"

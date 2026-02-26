@@ -1,46 +1,171 @@
-# Codex Skills Pack
+# ProofGraph Skills
 
-Codex에서 바로 배포/사용 가능한 워크플로 스킬 모음입니다.
-목표는 `기획 -> 구현 -> 검증`을 스킬 단위로 표준화하는 것입니다.
+A skill-only workflow pack for Codex that standardizes **planning -> implementation -> validation** without relying on AGENTS.md or multi-agent runtime features.
 
 ## Concept
-- Skill-only 운영: AGENTS.md나 멀티 에이전트 의존 없이 스킬 자체 규약으로 동작
-- Hard TDD 실행: strict 검증 흐름과 증거 로그 중심 실행
-- Runtime/Governance 분리: 런타임은 `.codex`, 정책/자산은 `.sigee` 기준
+
+This repository is built around four principles:
+
+1. **Skill-only operation**
+   - The workflow is enforced by skill contracts and helper scripts.
+   - Users can drive the system through natural-language requests.
+
+2. **Planner-centric orchestration**
+   - `tech-planner` owns loop control and final completion authority.
+   - `tech-developer` and `tech-scientist` hand work back to planner review.
+
+3. **Strict test-first execution**
+   - Runtime flow is strict by default.
+   - Verification evidence is mandatory for completion.
+
+4. **Governance vs runtime separation**
+   - Governance and long-lived intent live in `.sigee/`.
+   - Volatile execution artifacts live in `${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`.
 
 ## Included Skills
-- `tech-planner`: 요구사항 인터뷰, PlanSpec v2 작성, 품질 게이트/린트, developer handoff 생성
-- `tech-developer`: 계획 기반 큐 전체 실행(웨이브), strict 검증, evidence/report 생성
-- `tech-scientist`: 논문/근거 기반 과학·수학·시뮬레이션/AI 설계를 의사코드와 검증 계획으로 변환
-- `coolify-cli-infra-manager`: Coolify CLI/API 운영 자동화 및 인프라 작업 가이드
+
+- `tech-planner`
+  - Requirement interview, plan definition, scenario/DAG planning, queue orchestration, done-gate review.
+- `tech-developer`
+  - Plan-driven implementation, strict validation, wave-based execution in queue mode, evidence-first handoff.
+- `tech-scientist`
+  - Paper-backed science/engineering/math/AI-ML method translation into project-ready pseudocode and validation plans.
+
+## Operating Model
+
+### 1) Product Truth SSoT
+
+Planning truth is anchored in `.sigee/product-truth/`:
+
+- `outcomes.yaml`
+- `capabilities.yaml`
+- `traceability.yaml`
+
+This maps outcome -> capability -> scenario -> DAG node contract.
+
+### 2) Orchestration Queues
+
+Queue root:
+
+- `<runtime-root>/orchestration/queues/`
+
+Standard queues:
+
+- `planner-inbox`
+- `scientist-todo`
+- `developer-todo`
+- `planner-review`
+- `blocked`
+- `done` (transient completion lane)
+
+### 3) Done and Archive Behavior
+
+Completion is planner-gated and archive-backed:
+
+- Only `planner-review -> done` is allowed.
+- `done` transition requires:
+  - planner actor authority,
+  - non-empty evidence links,
+  - passing verification gate.
+- Completed rows are automatically archived to:
+  - `<runtime-root>/orchestration/archive/done-YYYY-MM.tsv`
+- Archive maintenance is internal via `orchestration_archive.sh` (`status`, `flush-done`, `clear`).
+
+### 4) Mandatory DAG Test Contract
+
+Per scenario, the following counts are enforced:
+
+- `unit_normal = 2`
+- `unit_boundary = 2`
+- `unit_failure = 2`
+- `boundary_smoke = 5`
+
+## Runtime and Paths
+
+Default runtime root:
+
+- `${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`
+
+Typical runtime outputs:
+
+- plans: `<runtime-root>/plans/`
+- scenarios: `<runtime-root>/dag/scenarios/`
+- pipelines: `<runtime-root>/dag/pipelines/`
+- state: `<runtime-root>/dag/state/`
+- evidence: `<runtime-root>/evidence/`
+- queues: `<runtime-root>/orchestration/queues/`
+- done archive: `<runtime-root>/orchestration/archive/`
 
 ## Install
-기본 설치 대상: `${CODEX_HOME:-$HOME/.codex}/skills`
 
-전체 설치:
-```bash
-./scripts/deploy.sh --all
+Default installation target:
+
+- `${CODEX_HOME}/skills`
+
+Recommended UX is chat-first (let Codex install internally), for example:
+
+```md
+$skill-installer
+Install tech-planner, tech-developer, and tech-scientist from this repository into my Codex skills path.
 ```
 
-선택 설치:
-```bash
-./scripts/deploy.sh --skill tech-planner --skill tech-developer --skill tech-scientist
+Maintainer scripts are available in `scripts/` for local deployment automation.
+
+## Minimal Usage (Chat-First)
+
+### Planning
+
+```md
+$tech-planner
+runtime-root=${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}
+
+Create an execution-ready plan for improving our checkout flow.
+Include acceptance criteria, validation gates, and risks.
 ```
 
-macOS 설치 스크립트:
-```bash
-./scripts/install-macos.sh --all
-./scripts/install-macos.sh --all --yes
+### Implementation
+
+```md
+$tech-developer
+runtime-root=${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}
+
+Execute the approved plan end-to-end in strict mode,
+then report results in content-first language with evidence summary.
 ```
 
-커스텀 설치 경로:
-```bash
-./scripts/deploy.sh --all --target /path/to/.codex/skills
+### Scientific / AI-ML Design
+
+```md
+$tech-scientist
+runtime-root=${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}
+
+For this simulation + AI pipeline problem, provide literature-backed pseudocode,
+validation design, and handoff prompts for planner and developer.
 ```
 
-## Minimal Usage
-```bash
-RUNTIME_ROOT="${SIGEE_RUNTIME_ROOT:-.codex}"
-skills/tech-planner/scripts/plan_lint.sh "$RUNTIME_ROOT/plans/<plan-id>.md"
-skills/tech-developer/scripts/codex_flow.sh "$RUNTIME_ROOT/plans/<plan-id>.md" --mode strict
-```
+## Git Hygiene
+
+This repository uses deny-by-default policy for `.sigee`.
+
+Tracked by default:
+
+- governance and intent assets under `.sigee/policies`, `.sigee/product-truth`, `.sigee/scenarios`, `.sigee/dag/schema`, `.sigee/dag/pipelines`, `.sigee/migrations`.
+
+Ignored by default:
+
+- runtime and volatile artifacts under `.sigee/.runtime/**` (including queues and archives), `.sigee/evidence/**`, `.sigee/reports/**`, `.sigee/templates/**`.
+
+## Repository Layout
+
+- `skills/tech-planner/`
+- `skills/tech-developer/`
+- `skills/tech-scientist/`
+- `.sigee/` (governance and product-truth baseline)
+- `scripts/` (deployment/install helpers)
+- `CHANGELOG.md`
+
+## Notes
+
+- This pack is optimized for natural-language operation.
+- Users should not need to run queue/archive scripts manually.
+- When users request cleanup (for example archive purge), the skills should execute it internally.

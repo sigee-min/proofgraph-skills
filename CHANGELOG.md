@@ -1,6 +1,25 @@
 # Changelog
 
 ## Unreleased
+- Removed `coolify-cli-infra-manager` from this pack (files and references removed).
+- Rewrote `README.md` in English with a full concept-first structure reflecting current planner/developer/scientist workflow, runtime/archive model, and chat-first usage.
+- Added done-queue auto-archive behavior in orchestration runtime:
+  - `planner-review -> done` now writes completion rows to `<runtime-root>/orchestration/archive/done-YYYY-MM.tsv`.
+  - `done` queue is now treated as transient (no long-term accumulation).
+- Added archive maintenance helper: `skills/tech-planner/scripts/orchestration_archive.sh`
+  - `status`, `flush-done` (legacy done queue migration), and `clear --yes`.
+  - intended for internal skill execution when users request archive cleanup.
+- Strengthened planner-centric done gate enforcement in queue runtime:
+  - `orchestration_queue.sh move --to done` now requires planner actor authority (`--actor` or `SIGEE_QUEUE_ACTOR`).
+  - done transition now requires non-empty evidence and passing verification gate (`verification-results.tsv` PASS-only or `dag/state/last-run.json` PASS).
+  - if scenario catalog exists, done transition now validates product-truth consistency before completion.
+- Added lease lifecycle automation in queue runtime:
+  - `claim` now acquires lease as `held:<worker>:<utc>`.
+  - handoff to `planner-review`/`blocked`/`done` now auto-releases lease as `released:<utc>`.
+- Fixed queue move atomicity for done gate failures so failed validations do not remove ticket rows from source queue.
+- Clarified legacy-policy precedence:
+  - `outline-v1/*` docs are explicitly non-normative migration references.
+  - current runtime authority remains `.sigee/policies/orchestration-loop.md`.
 - Enforced hard TDD mode across planner/developer runtime flow:
   - Removed effective `fast` execution path; `plan_run.sh` and `codex_flow.sh` now accept strict mode only.
   - `plan_lint.sh` now requires `mode: strict` and per-task executable `Execute`/`Verification` command blocks.
@@ -17,9 +36,9 @@
 - Updated planner/developer checklists and agent prompts to require gitignore guard policy enforcement.
 - Added `.sigee` governance baseline docs (policy/template/scenario/DAG/migration) and root `.gitignore` rules that track long-lived assets while ignoring runtime artifacts.
 - Added legacy `sigee-*` role content migration maps into `.sigee` (role boundaries, workload discipline, template seeds, prompt contracts).
-- Added `.codex` -> `.sigee` compatibility and cutover playbooks (`dual-read`, `dual-write`, `cutover`, `rollback`).
-- Updated `README`, `tech-planner`, and `tech-developer` docs to prefer `.sigee` governance references while preserving current `.codex` runtime executability.
-- Enforced `tech-planner` handoff command policy: default next step is `skills/tech-developer/scripts/codex_flow.sh .codex/plans/<plan-id>.md --mode strict`, with `--write-report` suggested only on explicit persistent-report requests.
+- Added runtime/governance cutover playbooks (`dual-read`, `dual-write`, `cutover`, `rollback`).
+- Updated `README`, `tech-planner`, and `tech-developer` docs to use `.sigee` governance and `.sigee/.runtime` execution root.
+- Enforced `tech-planner` no-CLI handoff policy: default next step is an intent-only `다음 실행 프롬프트` block (no shell command/script path/CLI flag exposure), with report persistence mentioned only on explicit request.
 - Enforced `tech-developer` final response order policy: content/impact -> verification narrative -> risks/follow-up -> traceability appendix (no ID/path/log-first responses).
 - Synced planner/developer communication prompt references and agent default prompts with the same UX policy wording.
 - Changed `tech-developer` report persistence to opt-in: `plan_run.sh`/`codex_flow.sh` now skip report file generation by default and only write report/dashboard artifacts with `--write-report` (or explicit `report_generate.sh`).
@@ -29,17 +48,17 @@
   - `skills/tech-planner/references/communication-prompts.md`
   - `skills/tech-developer/references/communication-prompts.md`
 - Updated developer report template to lead with user-facing narrative before traceability metadata.
-- Added `.codex` single-entry workflow script: `skills/tech-developer/scripts/codex_flow.sh` (lint -> run -> report).
+- Added single-entry workflow script: `skills/tech-developer/scripts/codex_flow.sh` (lint -> run -> report).
 - Added resume support to execution loop: `plan_run.sh --resume` now surfaces previous fail context and archives prior verification results.
-- Added reports dashboard generator: `skills/tech-developer/scripts/reports_index.sh` producing `.codex/reports/index.md`.
+- Added reports dashboard generator: `skills/tech-developer/scripts/reports_index.sh` producing `.sigee/.runtime/reports/index.md`.
 - Updated report generation to refresh dashboard automatically after each run.
 - Updated README and tech-developer skill docs with single-entry and resume UX examples.
-- Added new `.codex` workflow skill: `tech-planner` (interview-first planning, PlanSpec v2 template, planning checklist).
-- Added new `.codex` workflow skill: `tech-developer` (plan-driven execution loop, verification checklist, delivery report template).
+- Added new workflow skill: `tech-planner` (interview-first planning, PlanSpec v2 template, planning checklist).
+- Added new workflow skill: `tech-developer` (plan-driven execution loop, verification checklist, delivery report template).
 - Added planner lint script: `skills/tech-planner/scripts/plan_lint.sh` for path/spec/task structure validation.
 - Added developer run script: `skills/tech-developer/scripts/plan_run.sh` for strict/fast execution-verification loop with checkbox progress update.
-- Added developer report script: `skills/tech-developer/scripts/report_generate.sh` to emit `.codex/reports/<plan-id>-report.md` from plan/evidence.
-- Added `.codex` UX guidance and command examples to `README.md`.
+- Added developer report script: `skills/tech-developer/scripts/report_generate.sh` to emit `.sigee/.runtime/reports/<plan-id>-report.md` from plan/evidence.
+- Added runtime UX guidance and command examples to `README.md`.
 - Enforced Implementer commit discipline: each processed ticket must produce at least one dedicated commit before leaving `InProgress`.
 - Added explicit prohibition on mixing multiple tickets in a single commit for Implementer runs.
 - Required commit hash evidence in ticket handoff (`Evidence Links`) before moving tickets to `Review`.

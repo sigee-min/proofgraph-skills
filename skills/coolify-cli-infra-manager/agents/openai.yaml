@@ -1,4 +1,0 @@
-interface:
-  display_name: "쿨리파이 인프라 매니저"
-  short_description: "Automate Coolify infra with CLI/API refs"
-  default_prompt: "Use $coolify-cli-infra-manager to manage Coolify infrastructure safely with the CLI and API docs."
