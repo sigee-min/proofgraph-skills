@@ -27,9 +27,23 @@ Do not ask a binary question without context.
 
 ## Default execution handoff wording
 ```text
-When ending the plan handoff, provide the default next prompt with runtime-root context:
-runtime-root = ${SIGEE_RUNTIME_ROOT:-.codex}
-skills/tech-developer/scripts/codex_flow.sh <runtime-root>/plans/<plan-id>.md --mode strict
-Explain that this default is chat-first and does not persist report files.
-Only include the --write-report variant when the user explicitly asks for report files.
+When ending the plan handoff, provide a no-CLI next prompt:
+- include runtime-root context (`runtime-root = ${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`)
+- choose route target explicitly:
+  - if scientific/numerical/simulation/AI method uncertainty remains, ask `$tech-scientist` first
+  - if implementation-ready, ask `$tech-developer`
+- scientist handoff must request evidence package + return to planner-review
+- developer handoff must request strict execution internally
+- do not expose shell commands, script paths, or CLI flags
+Explain that default behavior is chat-first and report files are generated only when explicitly requested.
+```
+
+## Loop-mode handoff wording
+```text
+If orchestration loop mode is active, include queue routing context:
+- planner owns orchestration and review decisions
+- developer/scientist must return to planner-review queue
+- done transition is planner-only
+Mention runtime queue path:
+<runtime-root>/orchestration/queues/
 ```

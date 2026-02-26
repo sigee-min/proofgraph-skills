@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+- Fixed planner handoff routing to prevent developer-first deadlocks:
+  - `tech-planner` now requires scientist-first `다음 실행 프롬프트` when scientific/numerical/simulation/AI method uncertainty remains.
+  - developer handoff is now explicitly restricted to implementation-ready states.
+  - planner communication prompt/checklist/agent prompt were aligned to the same routing rule.
 - Removed `coolify-cli-infra-manager` from this pack (files and references removed).
 - Rewrote `README.md` in English with a full concept-first structure reflecting current planner/developer/scientist workflow, runtime/archive model, and chat-first usage.
 - Added done-queue auto-archive behavior in orchestration runtime:
