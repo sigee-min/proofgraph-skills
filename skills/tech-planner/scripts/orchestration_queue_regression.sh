@@ -99,8 +99,7 @@ DONE_OUT="$(run_queue move \
   --evidence "$MIXED_EVIDENCE" \
   --next-action "none" 2>&1)"
 assert_contains "$DONE_OUT" "다음 실행 프롬프트" "done transition next prompt block"
-assert_contains "$DONE_OUT" '$tech-planner' "done transition next prompt target"
-assert_contains "$DONE_OUT" "runtime-root = \${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}" "done transition runtime-root contract"
+assert_not_contains "$DONE_OUT" '$tech-planner' "done transition user-facing hides internal target"
 
 ARCHIVE_FILE="$PROJECT_ROOT/$RUNTIME_ROOT/orchestration/archive/done-$(date -u '+%Y-%m').tsv"
 if ! awk -F'\t' '$1=="DONE-DELIM-001"{found=1} END{exit(found?0:1)}' "$ARCHIVE_FILE"; then
@@ -252,6 +251,11 @@ assert_contains "$NEXT_OUT" "NEXT_PROMPT_QUEUE:" "next-prompt queue output"
 assert_contains "$NEXT_OUT" "NEXT_PROMPT_REASON:" "next-prompt reason output"
 assert_contains "$NEXT_OUT" "다음 실행 프롬프트" "next-prompt markdown block"
 
+NEXT_USER_OUT="$(run_queue next-prompt --user-facing 2>&1)"
+assert_not_contains "$NEXT_USER_OUT" '$tech-' "user-facing next-prompt hides skill ids"
+assert_not_contains "$NEXT_USER_OUT" "runtime-root =" "user-facing next-prompt hides runtime path"
+assert_not_contains "$NEXT_USER_OUT" "LOOP_STATUS:" "user-facing next-prompt hides machine loop status"
+
 # 7) developer profile hint extraction on claim
 run_queue add \
   --queue developer-todo \
@@ -305,5 +309,8 @@ fi
 PLAN_NEXT_OUT="$(bash "$QUEUE_SCRIPT" next-prompt --project-root "$PLAN_SYNC_ROOT" 2>&1)"
 assert_contains "$PLAN_NEXT_OUT" "NEXT_PROMPT_TARGET:tech-planner" "plan auto-seed next target"
 assert_contains "$PLAN_NEXT_OUT" "NEXT_PROMPT_QUEUE:planner-inbox" "plan auto-seed next queue"
+
+PLAN_NEXT_USER_OUT="$(bash "$QUEUE_SCRIPT" next-prompt --user-facing --project-root "$PLAN_SYNC_ROOT" 2>&1)"
+assert_not_contains "$PLAN_NEXT_USER_OUT" '$tech-' "plan auto-seed user-facing hides skill ids"
 
 echo "orchestration_queue_regression passed: delimiter-compat + auto-escalation + reconcile-cleanup + triage + weekly-summary + next-prompt + profile-hint-claim + pending-plan-auto-seed"

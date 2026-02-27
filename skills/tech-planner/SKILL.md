@@ -37,21 +37,22 @@ description: Evidence-backed technical planning for complex implementation work.
    - `scripts/plan_lint.sh <runtime-root>/plans/<plan-id>.md`
    - this automatically runs `scripts/sigee_gitignore_guard.sh <project-root>` to check/apply `.sigee` gitignore policy
    - this also runs `scripts/product_truth_validate.sh` to enforce product-truth cross-reference consistency (`outcomes/capabilities/traceability` and scenario linkage when present)
-8. End with a clear handoff prompt for the selected route target (`$tech-scientist` or `$tech-developer`):
+8. End with a clear handoff prompt for the selected route target (scientific validation track or implementation track):
    - loop 상태와 무관하게 copy-ready markdown fenced block(` ```md `) `다음 실행 프롬프트`를 제공
-   - `loop-status=STOP_DONE|STOP_USER_CONFIRMATION`에서는 다음 라우팅 대신 "다음 사이클 시작/의사결정 해소" 프롬프트를 제공
+   - 종료/의사결정 필요 상태에서는 다음 라우팅 대신 "다음 사이클 시작/의사결정 해소" 프롬프트를 제공
    - handoff prompt must be intent-first and no-CLI:
      - do not include shell commands, script paths, or CLI flags
+     - do not include runtime path/config lines, queue names, or internal IDs
    - route-target selection is mandatory:
-     - if unresolved scientific/numerical/simulation/AI method uncertainty exists (or required research evidence is missing), hand off to `$tech-scientist` first
-     - hand off to `$tech-developer` only when implementation-ready and scientific uncertainty is resolved
+     - if unresolved scientific/numerical/simulation/AI method uncertainty exists (or required research evidence is missing), hand off to scientific validation first
+     - hand off to implementation only when implementation-ready and scientific uncertainty is resolved
    - scientist-first handoff prompt:
-     - ask `$tech-scientist` for a project-ready evidence package (problem formulation + literature matrix + pseudocode + validation plan)
-     - require return to planner-review with evidence links and confidence
+     - ask for a project-ready evidence package (problem formulation + literature matrix + pseudocode + validation plan)
+     - require return to planning review with evidence links and confidence
    - developer handoff prompt:
-     - DAG-first (when scenario DAG is defined): ask `$tech-developer` to execute the strict DAG workflow internally (build -> dry-run -> changed-only)
-     - fallback (non-DAG plan): ask `$tech-developer` to execute the approved plan in strict mode internally
-     - include developer profile intent when useful (recommended metadata pattern in queue context: `profile=<slug>` in `next_action` or `note`)
+     - DAG-first (when scenario DAG is defined): ask for strict DAG workflow execution internally (build -> dry-run -> changed-only)
+     - fallback (non-DAG plan): ask for strict approved-plan execution internally
+     - include developer profile intent in plain-language role terms when useful
    - include report persistence only when the user explicitly requests it.
 
 ## Planner Orchestration Loop (Mandatory)
@@ -164,12 +165,11 @@ description: Evidence-backed technical planning for complex implementation work.
 - Handoff target must follow routing decision:
   - scientist-first when scientific/numerical/simulation/AI uncertainty remains
   - developer only when implementation-ready
-- If target is `$tech-scientist`, the prompt must request:
-  - evidence package generation and planner-review return
-- If target is `$tech-developer`:
-  - when DAG scenarios exist, request strict DAG workflow execution (build, dry-run, changed-only) as internal skill actions
-  - otherwise, request strict plan execution for the target plan as an internal skill action
-  - include profile intent in natural language (example: `refactoring-specialist` for residue cleanup)
+- scientific handoff prompt must request evidence package generation and planning review return
+- implementation handoff prompt must request strict execution + verification evidence return
+- when DAG scenarios exist, request strict DAG workflow execution as internal actions (no CLI exposure)
+- otherwise, request strict plan execution as an internal action (no CLI exposure)
+- profile intent may be described in plain-language role terms (do not expose slug unless requested)
 - Do not default to report file generation.
 - Only mention persistent report generation when explicitly requested.
 
@@ -183,10 +183,13 @@ description: Evidence-backed technical planning for complex implementation work.
 - Treat orchestration as a black box in user-facing messages.
   - do not expose queue names, phase names, done-gate labels, or lease/state-machine terms unless explicitly requested
   - do not expose raw queue helper keys (`LOOP_STATUS`, `NEXT_PROMPT_*`, `CLAIM_*`) in normal product reports
+  - do not expose runtime path/config lines (for example `runtime-root=...`) in default user-facing prompts
 - Default output is product-first:
   - user-visible change
   - scenario/test confidence
   - next product decision
+- Never expose internal artifact names in default user mode:
+  - queue names, ticket IDs, plan IDs, backlog file names, script file names
 - Mention IDs (`plan-id`, ticket IDs) only in a final traceability section or when explicitly requested.
 
 ## Output Contract
@@ -196,17 +199,15 @@ Return:
 - unresolved decisions that require user input
 - plan path (traceability, optional in default user mode)
 - one copy-ready `다음 실행 프롬프트` markdown block for the selected target:
-  - scientist mode: target `$tech-scientist` when scientific/numerical/simulation/AI uncertainty remains; request evidence package + planner-review return
-  - developer mode: target `$tech-developer` only when implementation-ready
+  - scientist mode: when scientific/numerical/simulation/AI uncertainty remains; request evidence package + planning review return
+  - developer mode: only when implementation-ready
     - DAG mode: request strict DAG workflow execution in natural language (no command lines)
     - non-DAG mode: request strict plan execution in natural language (no command lines)
-  - stop mode (`STOP_DONE|STOP_USER_CONFIRMATION`): target `$tech-planner` with next-cycle start or decision-resolution intent
+- stop mode: provide next-cycle start or decision-resolution intent in product language
   - optional report persistence only when requested
 - in default user mode, summarize termination in product language (not queue language).
-- include runtime-root note in handoff prompt:
-  - `runtime-root = ${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`
 - if autoloop mode is used, additionally report:
-  - terminal status (`STOP_DONE|STOP_USER_CONFIRMATION|STOP_MAX_CYCLES|STOP_NO_PROGRESS`)
+  - terminal condition category (completed / decision-needed / safety-stop)
   - total cycles and why the loop stopped
 
 ## References

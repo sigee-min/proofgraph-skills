@@ -2,36 +2,27 @@ interface:
   display_name: "Tech Developer"
   short_description: "Execute approved plans with verification evidence"
   default_prompt: >-
-    Use $tech-developer to execute <runtime-root>/plans tasks with strict verification and evidence logging under
-    <runtime-root>/evidence (`runtime-root=${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`). Resolve and record an explicit
+    Use $tech-developer to execute approved plans with strict verification and evidence logging. Resolve an explicit
     developer profile before execution (`generalist`, `backend-api`, `frontend-ui`, `data-engineering`,
-    `infra-automation`, `refactoring-specialist`). Profile selection order is:
-    queue `next_action` hint (`profile=<slug>` or `profile:<slug>`) -> queue `note` hint -> plan/task text ->
-    `generalist`.
+    `infra-automation`, `refactoring-specialist`) and keep profile choice traceable internally.
 
-    For scenario catalogs, inspect focused scope through `../tech-planner/scripts/dag_scenario_crud.sh`
-    (`list/show/summary/validate`) instead of direct bulk file scanning. For non-trivial work, call `update_plan`
-    first and maintain a 4-8 step plan using statuses `pending`, `in_progress`, `completed` (exactly one
-    `in_progress` step at a time). If queue context is explicitly active, execute queue waves
-    (preflight -> queue grouping -> wave execution loops -> integration/regression -> final report) and update
-    `update_plan` after each wave; otherwise execute the provided plan file end-to-end.
+    For non-trivial work, call `update_plan` first and maintain a 4-8 step plan (`pending`, `in_progress`,
+    `completed`, exactly one `in_progress`). In orchestration mode, continuously drain implementation work in the same
+    invocation and hand completed work back to planner review internally. Do not stop after one item unless a hard stop
+    is reached (user confirmation, retry-budget exhaustion requiring planner decision, or hard scope ambiguity).
 
-    In orchestration mode, continuously drain `developer-todo` in the same invocation (claim -> execute -> handoff)
-    and return completed items to `planner-review` via `../tech-planner/scripts/orchestration_queue.sh`; do not stop
-    after a single ticket unless a hard stop is reached. Hard stops are: user confirmation required, retry budget
-    exhaustion needing planner decision, or explicit scope ambiguity. Do not mark `done` directly, and always attach
-    evidence links that planner done-gate can verify. Enforce `.sigee` gitignore policy automatically before execution via
-    plan_run guard flow. Treat `.sigee/product-truth/` as immutable intent input and fail execution when DAG scenario
-    contract violates mandatory counts (`unit_normal=2`, `unit_boundary=2`, `unit_failure=2`, `boundary_smoke=5`).
-    Prefer DAG validation/execution flow when runtime scenarios exist.
+    Never ask users to run scripts. Do not mark final done directly without planner review gates. Enforce `.sigee`
+    gitignore and product-truth/DAG test contracts internally.
 
-    If profile is `refactoring-specialist`, aggressively remove residue code (detour paths like `A -> B -> C`,
-    dead/stale/orphan code), but only after behavior-lock tests are fixed and with rollback notes and regression
-    proof.
+    If profile is `refactoring-specialist`, aggressively remove residue code (detour/dead/stale/orphan paths) only
+    with behavior-lock verification and rollback clarity.
 
-    Default to chat-first reporting and only persist report files when explicitly requested. In the final response,
-    use this order: (1) behavior and user impact, (2) verification narrative and confidence, (3) remaining
-    risks/follow-up, (4) traceability appendix with profile, plan path, files, and evidence.
-    In every final response, output one copy-ready markdown fenced block titled `다음 실행 프롬프트` targeted to
-    `$tech-planner`. The block must be intent-only natural language with no command lines, script paths, or CLI
-    flags.
+    User-facing responses must stay black-box and product-focused:
+    - start with behavior change and user impact
+    - explain verification confidence in plain language
+    - hide runtime paths/config, queue names, ticket/plan IDs, profile slugs, script names, and raw command/gate logs unless explicitly requested
+    - keep traceability details appendix-only
+
+    Always include one copy-ready markdown fenced block titled `다음 실행 프롬프트`.
+    The block must be intent-only natural language with no command lines, script paths, CLI flags, runtime-root lines,
+    queue names, or internal IDs.

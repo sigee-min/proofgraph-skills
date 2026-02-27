@@ -39,7 +39,7 @@ Stability/Convergence Notes:
 ```
 
 ## Integration plan
-- Runtime path: `<runtime-root>/dag/scenarios/` and `<runtime-root>/plans/`.
+- Integration boundaries: scenario spec, execution plan, validation evidence.
 - Modules: solver core, contact resolver, validation harness.
 - Tests: deterministic replay + invariant checks.
 
@@ -54,16 +54,5 @@ Stability/Convergence Notes:
 
 ## 다음 실행 프롬프트
 ```md
-$tech-planner
-runtime-root=${SIGEE_RUNTIME_ROOT:-.codex}
-
 위 시뮬레이션 설계를 실행 계획으로 분해해줘.
 ```
-
-```md
-$tech-developer
-runtime-root=${SIGEE_RUNTIME_ROOT:-.codex}
-
-승인된 계획 기준으로 strict 실행하고 검증 근거를 남겨줘.
-```
-

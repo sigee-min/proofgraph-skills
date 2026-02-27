@@ -28,22 +28,22 @@ Do not ask a binary question without context.
 ## Default execution handoff wording
 ```text
 When ending the plan handoff, provide a no-CLI next prompt:
-- include runtime-root context (`runtime-root = ${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`)
-- choose route target explicitly:
-  - if scientific/numerical/simulation/AI method uncertainty remains, ask `$tech-scientist` first
-  - if implementation-ready, ask `$tech-developer`
-- scientist handoff must request evidence package + return to planner-review
-- developer handoff must request strict execution internally
+- keep the prompt intent-only and product-centered
+- choose route intent explicitly:
+  - if scientific/numerical/simulation/AI method uncertainty remains, request scientific validation first
+  - if implementation-ready, request implementation execution next
+- scientific handoff must request evidence package + planning review return
+- developer handoff must request strict execution + verification narrative
 - do not expose shell commands, script paths, or CLI flags
+- do not expose runtime paths/config, queue names, ticket IDs, plan IDs, or internal gate labels
 Explain that default behavior is chat-first and report files are generated only when explicitly requested.
 ```
 
 ## Loop-mode handoff wording
 ```text
-If orchestration loop mode is active, include queue routing context:
-- planner owns orchestration and review decisions
-- developer/scientist must return to planner-review queue
-- done transition is planner-only
-Mention runtime queue path:
-<runtime-root>/orchestration/queues/
+If loop mode is active, keep orchestration details hidden and explain only product progress:
+- what was completed for users
+- what remains for the next cycle
+- whether user confirmation is required
+Do not mention runtime queue paths, queue names, or internal state-machine terms by default.
 ```

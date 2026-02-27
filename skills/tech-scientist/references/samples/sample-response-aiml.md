@@ -43,7 +43,7 @@ Stability/Convergence Notes:
 ```
 
 ## Integration plan
-- Runtime path: `<runtime-root>/plans/` and `<runtime-root>/evidence/`.
+- Integration boundaries: planning artifacts, evidence collection, deployment safeguards.
 - Modules: data validation, trainer, evaluator, serving adapter, drift monitor.
 - Tests: data integrity, deterministic replay, inference budget checks.
 
@@ -65,16 +65,5 @@ Stability/Convergence Notes:
 
 ## 다음 실행 프롬프트
 ```md
-$tech-planner
-runtime-root=${SIGEE_RUNTIME_ROOT:-.codex}
-
 위 AI/ML 파이프라인 설계를 실행 계획으로 분해해줘.
 ```
-
-```md
-$tech-developer
-runtime-root=${SIGEE_RUNTIME_ROOT:-.codex}
-
-승인된 AI/ML 계획을 strict 기준으로 끝까지 실행하고 검증 로그를 남겨줘.
-```
-

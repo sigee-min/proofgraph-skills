@@ -116,6 +116,7 @@
 - 사용자에게는 제품 영향 요약과 다음 실행 프롬프트만 노출하고, 스크립트 실행을 요구하지 않는다.
 - 기본 사용자 보고에서는 큐/상태머신 용어를 숨긴다.
   - 숨김 대상: queue 이름, phase, lease, done-gate, `LOOP_STATUS`, `NEXT_PROMPT_*`, `CLAIM_*`
+  - 숨김 대상에 runtime path/config 표현도 포함한다 (예: `runtime-root=...`)
   - 예외: 사용자가 운영 세부(traceability/큐 상태)를 명시적으로 요청한 경우
 - 다음 실행 프롬프트는 작업 의도만 포함하며, shell 명령/스크립트 경로/CLI 옵션을 노출하지 않는다.
 - 큐/런타임 폴더와 `.sigee/templates/*` 로컬 템플릿은 최초 큐 동작 시 자동 생성한다.

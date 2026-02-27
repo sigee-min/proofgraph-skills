@@ -883,21 +883,15 @@ emit_loop_status_snapshot() {
   if [[ "$output_mode" == "user" ]]; then
     case "$loop_status" in
       CONTINUE)
-        echo "상태: 진행 가능 (CONTINUE)"
-        echo "요약: 남은 제품 작업이 있어 자동 진행을 계속할 수 있습니다."
-        echo "남은 제품 작업: $actionable_total"
+        echo "요약: 다음 제품 작업으로 바로 진행할 수 있습니다."
         ;;
       STOP_DONE)
-        echo "상태: 종료 (STOP_DONE)"
-        echo "요약: 현재 처리 가능한 제품 작업이 없어 루프를 종료합니다."
+        echo "요약: 현재 사이클 목표가 완료되었습니다."
         ;;
       STOP_USER_CONFIRMATION)
-        echo "상태: 사용자 확인 필요로 중단 (STOP_USER_CONFIRMATION)"
-        echo "요약: 사용자 확인이 필요한 의사결정이 있어 루프를 일시 중단합니다."
-        echo "확인 필요 항목 수: $blocked_user_count"
+        echo "요약: 다음 단계로 가기 전에 사용자 결정이 필요합니다."
         ;;
       *)
-        echo "상태: $loop_status"
         echo "요약: $reason"
         ;;
     esac
@@ -1014,28 +1008,28 @@ next_prompt_message_user_facing() {
   local queue="$2"
   case "$target:$queue" in
     tech-planner:planner-review)
-      printf "%s" "최근 완료된 변경을 사용자 영향 기준으로 승인/반려해줘. 반려 시에는 왜 사용자가 영향을 받는지와 재작업 방향만 간단히 정리해줘."
+      printf "%s" "방금 반영된 변화가 제품 목표에 맞는지 확인해줘. 보완이 필요하면 사용자 영향이 큰 개선 1건만 제안해줘."
       ;;
     tech-planner:blocked)
-      printf "%s" "현재 진행을 막는 의사결정 항목을 우선순위순으로 정리해줘. 각 항목마다 진행/우회/범위축소/중단 중 권장안을 제시해줘."
+      printf "%s" "진행을 막는 의사결정을 사용자 관점으로 정리해줘. 각 항목마다 권장 선택과 영향을 간단히 제시해줘."
       ;;
     tech-scientist:scientist-todo)
-      printf "%s" "남아있는 과학/수학 검증 과제 중 우선순위 1건부터 처리해줘. 근거, 적용 의사코드, 검증 계획을 제품 적용 중심으로 정리해줘."
+      printf "%s" "제품 적용 리스크를 줄일 수 있는 검증 과제 1건을 우선 처리해줘. 결과는 근거와 적용 방향 중심으로 설명해줘."
       ;;
     tech-developer:developer-todo)
-      printf "%s" "남아있는 구현 과제 중 우선순위 1건부터 strict 모드로 구현해줘. 사용자에게 보이는 변화와 테스트 근거를 중심으로 보고해줘."
+      printf "%s" "사용자 가치가 큰 기능 1건을 우선 구현해줘. 사용자 변화와 안전성 확인 결과 중심으로 설명해줘."
       ;;
     tech-planner:planner-inbox)
-      printf "%s" "신규 요구를 제품 관점으로 분해해 우선순위를 정해줘. 바로 실행 가능한 다음 작업 1건만 제시해줘."
+      printf "%s" "신규 요구를 제품 기능으로 정리해 우선순위를 정해줘. 바로 시작할 다음 작업 1건만 제시해줘."
       ;;
     tech-planner:blocked-user-confirmation)
-      printf "%s" "사용자 확인이 필요한 의사결정 항목을 정리해줘. 각 항목마다 권장 선택지와 영향을 함께 설명해줘."
+      printf "%s" "지금 필요한 사용자 결정을 정리해줘. 각 항목마다 권장 선택과 영향만 짧게 설명해줘."
       ;;
     tech-planner:completed)
-      printf "%s" "현재 사이클이 완료되었어. 다음 기능 개발을 시작할 수 있도록 사용자 목표를 1개 선정하고 실행 가능한 첫 작업 1건을 제안해줘."
+      printf "%s" "현재 사이클이 완료되었어. 다음 제품 목표 1개를 정하고 바로 시작할 첫 작업 1건을 제안해줘."
       ;;
     *)
-      printf "%s" "남은 제품 가치가 가장 큰 다음 작업 1건을 선정해줘. 선정 이유와 기대 사용자 영향을 함께 설명해줘."
+      printf "%s" "다음으로 사용자 가치가 큰 작업 1건을 선정해줘. 선정 이유와 기대 변화를 함께 설명해줘."
       ;;
   esac
 }
@@ -1065,9 +1059,11 @@ emit_next_prompt_recommendation() {
   printf '%s\n' '```md'
   printf '%s\n' '다음 실행 프롬프트'
   printf '\n'
-  printf '$%s\n' "$target"
-  printf '%s\n' 'runtime-root = ${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}'
-  printf '\n'
+  if [[ "$output_mode" != "user" ]]; then
+    printf '$%s\n' "$target"
+    printf '%s\n' 'runtime-root = ${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}'
+    printf '\n'
+  fi
   printf '%s\n' "$message"
   printf '%s\n' '```'
 }
@@ -1863,7 +1859,7 @@ bootstrap_runtime() {
   ensure_default_templates "$project_root"
 
   if [[ -x "$GITIGNORE_GUARD_SCRIPT" ]]; then
-    "$GITIGNORE_GUARD_SCRIPT" "$project_root"
+    "$GITIGNORE_GUARD_SCRIPT" "$project_root" >/dev/null
   fi
 }
 

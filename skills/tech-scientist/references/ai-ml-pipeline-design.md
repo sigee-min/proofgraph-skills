@@ -47,5 +47,5 @@ Use this template when the task involves model training, fine-tuning, or inferen
 
 ## 8) Output Requirements
 - Project-ready pseudocode for data->train->eval->serve.
-- Integration mapping to `<runtime-root>` paths.
-- `다음 실행 프롬프트` blocks for `$tech-planner` and `$tech-developer`.
+- Integration mapping to module boundaries and verification hooks (runtime path details are optional appendix).
+- One `다음 실행 프롬프트` block for planning review intent.

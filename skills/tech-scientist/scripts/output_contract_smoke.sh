@@ -76,13 +76,13 @@ if [[ "$EXPECT_AI" -eq 1 ]]; then
   fi
 fi
 
-if ! rg -n '^\$tech-planner$' "$TARGET_FILE" >/dev/null 2>&1; then
-  echo 'ERROR: missing planner handoff block ($tech-planner).' >&2
+if ! rg -n '^```md$|^```text$|^```$' "$TARGET_FILE" >/dev/null 2>&1; then
+  echo 'ERROR: missing fenced handoff block under 다음 실행 프롬프트.' >&2
   exit 1
 fi
 
-if ! rg -n '^\$tech-developer$' "$TARGET_FILE" >/dev/null 2>&1; then
-  echo 'ERROR: missing developer handoff block ($tech-developer).' >&2
+if rg -n '^\$tech-|runtime-root|SIGEE_RUNTIME_ROOT' "$TARGET_FILE" >/dev/null 2>&1; then
+  echo 'ERROR: handoff block leaks internal skill/runtime identifiers.' >&2
   exit 1
 fi
 

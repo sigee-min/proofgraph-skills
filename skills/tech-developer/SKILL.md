@@ -64,8 +64,8 @@ description: Plan-driven implementation and verification workflow for approved t
    - verification outcomes
    - unresolved risks or follow-up items
    - queue handoff for planner review (`developer-todo -> planner-review`)
-   - loop 상태와 무관하게 copy-ready `다음 실행 프롬프트` block을 `$tech-planner` 대상으로 제공
-   - `STOP_DONE`/`STOP_USER_CONFIRMATION`에서는 다음 사이클 시작 또는 의사결정 해소를 요청하는 프롬프트를 제공
+   - loop 상태와 무관하게 copy-ready `다음 실행 프롬프트` block을 planning review 목적으로 제공
+   - 종료/의사결정 필요 상태에서는 다음 사이클 시작 또는 의사결정 해소를 요청하는 프롬프트를 제공
 7. Generate execution artifacts:
    - evidence logs in `<runtime-root>/evidence/<plan-id>/`
    - final report in `<runtime-root>/reports/<plan-id>-report.md` only when explicitly requested
@@ -81,8 +81,8 @@ description: Plan-driven implementation and verification workflow for approved t
 - 실패 시 `error_class`를 명시하고 `retry_budget` 내에서만 재시도한다.
 - planner/developer 라우팅 시 profile 의도를 `next_action` 또는 `note`에 남긴다 (권장 형식: `profile=<slug>`).
 - handoff 이후 `../tech-planner/scripts/orchestration_queue.sh loop-status --user-facing`를 내부 판정 기준으로 사용한다.
-  - `CONTINUE`: planner 라우팅 프롬프트 제공
-  - `STOP_DONE` / `STOP_USER_CONFIRMATION`: 종료 요약과 함께 planner 다음 프롬프트 제공
+  - 작업 지속 가능 상태: planning review 라우팅 프롬프트 제공
+  - 종료/의사결정 필요 상태: 종료 요약과 함께 다음 사이클 또는 결정 요청 프롬프트 제공
 
 ## Progress Tracking (Required)
 - For non-trivial execution, call `update_plan` before editing code.
@@ -144,13 +144,17 @@ description: Plan-driven implementation and verification workflow for approved t
 - Provide long-form explanations for important changes, not one-line summaries.
 - Treat orchestration internals as black box in default user responses.
   - do not expose queue names, gate labels, lease/state fields, or helper key-value logs unless explicitly requested
+  - do not expose runtime path/config lines (for example `runtime-root=...`) in default user-facing prompts
 - Keep IDs/paths/internal execution traces in a separate traceability section at the end, and omit that appendix by default unless requested.
+- Never expose internal artifact names in default user mode:
+  - queue names, ticket IDs, plan IDs, backlog/report file names, script file names
 - Final response에서 `다음 실행 프롬프트`는 항상 제공한다.
-- `loop-status=STOP_DONE|STOP_USER_CONFIRMATION`이면 종료 상태/사용자 영향을 설명한 뒤 다음 사이클 또는 의사결정 해소용 프롬프트를 제공한다.
+- 루프 종료 상태에서는 내부 상태 키를 노출하지 말고, 종료 영향과 다음 사이클/의사결정 해소용 프롬프트를 제품 언어로 제공한다.
 - `다음 실행 프롬프트` must be intent-only:
   - do not include shell command lines
   - do not include internal script paths
   - do not include CLI flags/options
+  - do not include runtime path/config lines, queue names, or internal IDs
 
 ## Response Order (Mandatory)
 - Always structure final user-facing explanation in this order:
@@ -201,7 +205,7 @@ Return:
   - key files changed
   - verification outcomes in plain language (internal command details only when explicitly requested)
 - include one copy-ready `다음 실행 프롬프트` markdown block:
-  - default target: `$tech-planner`
+  - default intent: planning review
   - if blocked, include required user decision and blocker evidence in the prompt intent
   - write natural-language task intent only (no shell command/script/flag exposure)
 - in default user mode, report termination using product-impact language, not queue-state language.
