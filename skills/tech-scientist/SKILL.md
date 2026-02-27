@@ -1,13 +1,14 @@
 ---
 name: tech-scientist
-description: Evidence-backed scientific and engineering translation for complex simulation, numerical methods, math-heavy algorithm design, and AI/ML training pipeline architecture. Use when tasks require paper-grounded reasoning (for example 3D physics simulation, optimization, PDE/ODE, convergence/stability analysis, model training workflow design), and the output must be project-ready pseudocode, validation plans, and integration handoff prompts for tech-planner and tech-developer.
+description: Evidence-backed scientific and engineering translation for complex simulation, numerical methods, math-heavy algorithm design, and AI/ML training pipeline architecture. Use when tasks require paper-grounded reasoning (for example 3D physics simulation, optimization, PDE/ODE, convergence/stability analysis, model training workflow design), and the output must be project-ready pseudocode, validation plans, and planner-centric integration handoff prompts.
 ---
 
 # Tech Scientist
 
 ## Operating Mode
 - Operate in skill-only mode. Do not depend on `AGENTS.md`, multi-agent roles, or role-specific runtime config.
-- Treat `.sigee` as governance source (`policy`, `template`, `migration`), and treat runtime execution paths as configurable via `runtime-root=${SIGEE_RUNTIME_ROOT:-.codex}`.
+- Treat `.sigee` as governance source (`policy`, `template`, `runtime contract`), and treat runtime execution paths as configurable via `runtime-root=${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`.
+- Treat `.sigee/product-truth/` as immutable intent input; propose updates through planner review instead of direct intent rewrites.
 - Prioritize primary sources (papers, RFCs, official docs, standards).
 - Separate clearly:
   - research feasibility (theory-level)
@@ -48,9 +49,29 @@ Use this skill when user requests include one or more of the following:
 
 6. Produce handoff prompts.
 - Use `references/handoff-prompts.md`.
-- Provide copy-ready markdown blocks titled `다음 실행 프롬프트` for:
-  - `$tech-planner`
-  - `$tech-developer`
+- loop 상태와 무관하게 `$tech-planner` 대상으로 copy-ready `다음 실행 프롬프트`를 제공한다.
+- `loop-status=STOP_DONE|STOP_USER_CONFIRMATION`이면 종료 사유 요약 후 다음 사이클/의사결정 해소 프롬프트를 제공한다.
+- Handoff blocks must be intent-only:
+  - no shell command lines
+  - no script paths
+  - no CLI flags/options
+7. Queue review handoff (when queue mode is enabled).
+- Move completed scientist item from `scientist-todo` to `planner-review`.
+- Attach evidence links, confidence label, and unresolved risks for planner decision.
+- Queue helper script is internal-only: `../tech-planner/scripts/orchestration_queue.sh` (`loop-status --user-facing`, `next-prompt --user-facing`)
+- Never transition to `done` directly; planner review is mandatory.
+- Queue handoff 이후 `loop-status` 내부 판정 기준:
+  - `CONTINUE`: planner 라우팅 프롬프트 제공
+  - `STOP_DONE` / `STOP_USER_CONFIRMATION`: 루프 종료 요약 후 planner 다음 프롬프트 제공
+
+## User Communication Policy
+- Treat orchestration internals as black box for user-facing science reports.
+  - do not expose queue names, gate labels, or helper key-value outputs unless explicitly requested
+- Explain scientific output in product-application language first:
+  - what becomes possible in the product
+  - what risk was reduced
+  - what validation confidence was achieved
+- Keep traceability details (IDs, queue routing, raw evidence file paths) optional and append-only when requested.
 
 ## Progress Tracking (Required)
 - For non-trivial scientific analysis (2+ meaningful phases), call `update_plan` before deep research starts.
@@ -78,7 +99,10 @@ Return sections in this order:
 6. Integration plan (module/file boundaries, runtime-root paths, test hooks, performance budget)
 7. Validation and benchmark plan (metrics, baseline, fail criteria)
 8. Risks, unknowns, and open decisions
-9. `다음 실행 프롬프트` markdown blocks (`$tech-planner`, `$tech-developer`)
+9. `다음 실행 프롬프트` markdown block (`$tech-planner`) - always
+   - prompt must be natural-language intent only (no command/script exposure)
+   - if `loop-status=STOP_DONE|STOP_USER_CONFIRMATION`, include next-cycle start or decision-resolution intent
+   - in default user mode, report termination using product-impact language, not queue-state language
 10. For AI/ML tasks: training/inference pipeline blueprint (data, train, eval, serve, monitor)
 
 ## AI/ML Pipeline Rules
@@ -132,6 +156,7 @@ Return sections in this order:
 - Validation and benchmarks: `references/validation-and-benchmarks.md`
 - Handoff prompt templates: `references/handoff-prompts.md`
 - Smoke samples: `references/samples/sample-response-simulation.md`, `references/samples/sample-response-aiml.md`
+- Orchestration policy: `.sigee/policies/orchestration-loop.md`
 
 ## Scripts
 - Citation lint: `scripts/citation_lint.sh`

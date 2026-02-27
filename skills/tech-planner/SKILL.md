@@ -27,7 +27,8 @@ description: Evidence-backed technical planning for complex implementation work.
 4. Select a plan path:
    - use `<runtime-root>/plans/<plan-id>.md` (required, default runtime root is `.sigee/.runtime`)
    - align policy/template assumptions with `.sigee` governance docs
-   - for scenario-driven delivery, define `<runtime-root>/dag/scenarios/<scenario-id>.scenario.yml` and map `red/impl/green/smoke/e2e` gates
+   - for scenario-driven delivery, define `.sigee/dag/scenarios/<scenario-id>.scenario.yml` as UX DAG source and map `red/impl/green/smoke/e2e` gates
+   - runtime DAG scenarios are compiled artifacts at `<runtime-root>/dag/scenarios/` (do not hand-edit)
    - for scenario CRUD/inspection, prefer `scripts/dag_scenario_crud.sh` (`list/show/summary/create/set/validate`) instead of direct bulk file reads
 5. Write the plan using the required template in `references/plan-template.md`.
    - enforce `mode: strict` (hard TDD baseline)
@@ -37,7 +38,8 @@ description: Evidence-backed technical planning for complex implementation work.
    - this automatically runs `scripts/sigee_gitignore_guard.sh <project-root>` to check/apply `.sigee` gitignore policy
    - this also runs `scripts/product_truth_validate.sh` to enforce product-truth cross-reference consistency (`outcomes/capabilities/traceability` and scenario linkage when present)
 8. End with a clear handoff prompt for the selected route target (`$tech-scientist` or `$tech-developer`):
-   - always provide a copy-ready markdown fenced block (` ```md `) titled `다음 실행 프롬프트`
+   - loop 상태와 무관하게 copy-ready markdown fenced block(` ```md `) `다음 실행 프롬프트`를 제공
+   - `loop-status=STOP_DONE|STOP_USER_CONFIRMATION`에서는 다음 라우팅 대신 "다음 사이클 시작/의사결정 해소" 프롬프트를 제공
    - handoff prompt must be intent-first and no-CLI:
      - do not include shell commands, script paths, or CLI flags
    - route-target selection is mandatory:
@@ -49,6 +51,7 @@ description: Evidence-backed technical planning for complex implementation work.
    - developer handoff prompt:
      - DAG-first (when scenario DAG is defined): ask `$tech-developer` to execute the strict DAG workflow internally (build -> dry-run -> changed-only)
      - fallback (non-DAG plan): ask `$tech-developer` to execute the approved plan in strict mode internally
+     - include developer profile intent when useful (recommended metadata pattern in queue context: `profile=<slug>` in `next_action` or `note`)
    - include report persistence only when the user explicitly requests it.
 
 ## Planner Orchestration Loop (Mandatory)
@@ -66,6 +69,7 @@ description: Evidence-backed technical planning for complex implementation work.
   - implementation-ready item -> `developer-todo`
   - scientist/developer completion -> `planner-review` (with evidence links)
   - planner review outcome -> `done` or requeue (`scientist-todo` / `developer-todo`)
+  - developer route should carry profile intent metadata when domain specialization or cleanup-heavy work is expected (`profile=<slug>`)
 - Done archive rules:
   - `done` 전이는 완료 즉시 `<runtime-root>/orchestration/archive/done-YYYY-MM.tsv`로 기록한다.
   - `done` 큐는 장기 누적 저장소로 사용하지 않는다.
@@ -75,13 +79,33 @@ description: Evidence-backed technical planning for complex implementation work.
   - require non-empty `evidence_links`
   - require passing evidence gate (`verification-results.tsv` PASS-only or `dag/state/last-run.json` PASS)
   - if scenario catalog exists, require `product_truth_validate` pass before done
-- Stop conditions are mandatory:
+  - when `planner-review -> done` succeeds, queue helper must evaluate `loop-status` first:
+    - `CONTINUE`이면 실행 라우팅용 `다음 실행 프롬프트`를 자동 추천
+    - `STOP_DONE` 또는 `STOP_USER_CONFIRMATION`이어도 다음 사이클 시작/의사결정 해소용 `다음 실행 프롬프트`를 출력
+- Lifecycle and retry governance (queue helper internal rule):
+  - phase model: `planned -> ready -> running -> evidence_collected -> verified -> done`
+  - failure classes: `none|soft_fail|hard_fail|dependency_blocked`
+  - retry fields: `attempt_count`, `retry_budget` (budget exhaustion blocks auto-claim)
+- Prompting loop termination contract (mandatory):
+  - 종료 판정 전 queue helper는 `<runtime-root>/plans/*.md`에서 unchecked task(`- [ ]`)가 남은 plan을 자동 감지해 `planner-inbox`로 시드한다 (source=`plan:<plan-id>`)
+  - `STOP_DONE`: actionable queue가 모두 비면 종료
+    - actionable queue 기준: `planner-inbox`, `scientist-todo`, `developer-todo`, `planner-review`, `blocked(non-user-confirmation)`
+    - pending plan backlog(미체크 task 존재)가 감지되면 `STOP_DONE`으로 종료하지 않는다
+  - `STOP_USER_CONFIRMATION`: `blocked` 항목 중 사용자 확정 신호가 있으면 종료
+    - 신호 예시: `needs_user_confirmation`, `external_decision_required`, `user_decision_required`
+  - `CONTINUE`: 위 종료 조건이 아니면 라우팅 계속
+- Safety stop conditions are also mandatory:
   - max cycle cap
   - 2 consecutive no-progress cycles
   - mandatory test contract failure that requires re-planning
-  - external decision required (`blocked`)
 - Queue runtime bootstrapping is internal:
   - if queue or template assets are missing, run `scripts/orchestration_queue.sh` internally to auto-bootstrap
+  - before `loop-status`/`next-prompt`, auto-sync pending plan backlog into `planner-inbox` to prevent false completion
+  - by default in loop mode, run `scripts/orchestration_autoloop.sh` internally for developer<->review continuous execution
+    - loop scope: `planner-inbox(plan-backed) -> developer-todo -> planner-review -> done|requeue`
+    - safety caps: `max-cycles`, `no-progress-limit`, `STOP_USER_CONFIRMATION`
+  - evaluate loop termination with `scripts/orchestration_queue.sh loop-status --user-facing` before emitting handoff prompts
+  - generate user-facing handoff with `scripts/orchestration_queue.sh next-prompt --user-facing`
   - archive maintenance on user request is internal:
     - check/flush/clear via `scripts/orchestration_archive.sh`
   - never ask the user to execute queue scripts directly
@@ -98,7 +122,8 @@ description: Evidence-backed technical planning for complex implementation work.
 - Before final response, mark all steps `completed`.
 
 ## DAG Planning Rules
-- Treat scenario files as the source for execution graph intent and changed-scope routing.
+- Treat `.sigee/dag/scenarios/` as the source for execution graph intent and changed-scope routing.
+- Treat `<runtime-root>/dag/scenarios/` as compiled runtime-only artifacts.
 - For large scenario catalogs, use `scripts/dag_scenario_crud.sh` to query/update focused subsets and preserve context budget.
 - Each scenario must define:
   - stable scenario id
@@ -144,6 +169,7 @@ description: Evidence-backed technical planning for complex implementation work.
 - If target is `$tech-developer`:
   - when DAG scenarios exist, request strict DAG workflow execution (build, dry-run, changed-only) as internal skill actions
   - otherwise, request strict plan execution for the target plan as an internal skill action
+  - include profile intent in natural language (example: `refactoring-specialist` for residue cleanup)
 - Do not default to report file generation.
 - Only mention persistent report generation when explicitly requested.
 
@@ -154,6 +180,13 @@ description: Evidence-backed technical planning for complex implementation work.
   - what will change for users or stakeholders
   - why this approach is selected
 - Use long-form explanations for handoff and decision points. Include context, trade-offs, and expected impact.
+- Treat orchestration as a black box in user-facing messages.
+  - do not expose queue names, phase names, done-gate labels, or lease/state-machine terms unless explicitly requested
+  - do not expose raw queue helper keys (`LOOP_STATUS`, `NEXT_PROMPT_*`, `CLAIM_*`) in normal product reports
+- Default output is product-first:
+  - user-visible change
+  - scenario/test confidence
+  - next product decision
 - Mention IDs (`plan-id`, ticket IDs) only in a final traceability section or when explicitly requested.
 
 ## Output Contract
@@ -161,15 +194,20 @@ Return:
 - long-form content summary (goal, scope, impact, approach)
 - key decisions with rationale and trade-offs
 - unresolved decisions that require user input
-- plan path (traceability)
+- plan path (traceability, optional in default user mode)
 - one copy-ready `다음 실행 프롬프트` markdown block for the selected target:
   - scientist mode: target `$tech-scientist` when scientific/numerical/simulation/AI uncertainty remains; request evidence package + planner-review return
   - developer mode: target `$tech-developer` only when implementation-ready
     - DAG mode: request strict DAG workflow execution in natural language (no command lines)
     - non-DAG mode: request strict plan execution in natural language (no command lines)
+  - stop mode (`STOP_DONE|STOP_USER_CONFIRMATION`): target `$tech-planner` with next-cycle start or decision-resolution intent
   - optional report persistence only when requested
+- in default user mode, summarize termination in product language (not queue language).
 - include runtime-root note in handoff prompt:
   - `runtime-root = ${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`
+- if autoloop mode is used, additionally report:
+  - terminal status (`STOP_DONE|STOP_USER_CONFIRMATION|STOP_MAX_CYCLES|STOP_NO_PROGRESS`)
+  - total cycles and why the loop stopped
 
 ## References
 - Plan template: `references/plan-template.md`
@@ -183,6 +221,7 @@ Return:
 - Governance baseline: `.sigee/README.md`, `.sigee/policies/gitignore-policy.md`
 - Product-truth policy: `.sigee/policies/product-truth-ssot.md`, `.sigee/product-truth/README.md`
 - Orchestration policy: `.sigee/policies/orchestration-loop.md`
-- Queue runtime helper: `scripts/orchestration_queue.sh`
+- Queue runtime helper: `scripts/orchestration_queue.sh` (`loop-status --user-facing`, `next-prompt --user-facing`)
+- Continuous loop helper: `scripts/orchestration_autoloop.sh`
 - Archive maintenance helper: `scripts/orchestration_archive.sh`
 - DAG scenario CRUD helper: `scripts/dag_scenario_crud.sh`

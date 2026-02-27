@@ -1,4 +1,37 @@
 interface:
   display_name: "Tech Developer"
   short_description: "Execute approved plans with verification evidence"
-  default_prompt: "Use $tech-developer to execute <runtime-root>/plans tasks with strict verification and evidence logging under <runtime-root>/evidence (`runtime-root=${SIGEE_RUNTIME_ROOT:-.codex}`). For non-trivial work, call `update_plan` first and maintain a 4-8 step plan using statuses `pending`, `in_progress`, `completed` (exactly one `in_progress` step at a time). Process the full eligible queue by wave (preflight -> queue grouping -> wave execution loops -> integration/regression -> final report), and update `update_plan` after each wave. Enforce `.sigee` gitignore policy automatically before execution via plan_run guard flow. Default to chat-first reporting and only persist report files when explicitly requested via --write-report or report_generate.sh. In the final response, use this order: (1) behavior and user impact, (2) verification narrative and confidence, (3) remaining risks/follow-up, (4) traceability appendix with plan path/files/commands. If follow-up execution is needed, do not output a next-command line; output one copy-ready markdown fenced block titled `다음 실행 프롬프트`."
+  default_prompt: >-
+    Use $tech-developer to execute <runtime-root>/plans tasks with strict verification and evidence logging under
+    <runtime-root>/evidence (`runtime-root=${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`). Resolve and record an explicit
+    developer profile before execution (`generalist`, `backend-api`, `frontend-ui`, `data-engineering`,
+    `infra-automation`, `refactoring-specialist`). Profile selection order is:
+    queue `next_action` hint (`profile=<slug>` or `profile:<slug>`) -> queue `note` hint -> plan/task text ->
+    `generalist`.
+
+    For scenario catalogs, inspect focused scope through `../tech-planner/scripts/dag_scenario_crud.sh`
+    (`list/show/summary/validate`) instead of direct bulk file scanning. For non-trivial work, call `update_plan`
+    first and maintain a 4-8 step plan using statuses `pending`, `in_progress`, `completed` (exactly one
+    `in_progress` step at a time). If queue context is explicitly active, execute queue waves
+    (preflight -> queue grouping -> wave execution loops -> integration/regression -> final report) and update
+    `update_plan` after each wave; otherwise execute the provided plan file end-to-end.
+
+    In orchestration mode, continuously drain `developer-todo` in the same invocation (claim -> execute -> handoff)
+    and return completed items to `planner-review` via `../tech-planner/scripts/orchestration_queue.sh`; do not stop
+    after a single ticket unless a hard stop is reached. Hard stops are: user confirmation required, retry budget
+    exhaustion needing planner decision, or explicit scope ambiguity. Do not mark `done` directly, and always attach
+    evidence links that planner done-gate can verify. Enforce `.sigee` gitignore policy automatically before execution via
+    plan_run guard flow. Treat `.sigee/product-truth/` as immutable intent input and fail execution when DAG scenario
+    contract violates mandatory counts (`unit_normal=2`, `unit_boundary=2`, `unit_failure=2`, `boundary_smoke=5`).
+    Prefer DAG validation/execution flow when runtime scenarios exist.
+
+    If profile is `refactoring-specialist`, aggressively remove residue code (detour paths like `A -> B -> C`,
+    dead/stale/orphan code), but only after behavior-lock tests are fixed and with rollback notes and regression
+    proof.
+
+    Default to chat-first reporting and only persist report files when explicitly requested. In the final response,
+    use this order: (1) behavior and user impact, (2) verification narrative and confidence, (3) remaining
+    risks/follow-up, (4) traceability appendix with profile, plan path, files, and evidence.
+    In every final response, output one copy-ready markdown fenced block titled `다음 실행 프롬프트` targeted to
+    `$tech-planner`. The block must be intent-only natural language with no command lines, script paths, or CLI
+    flags.
