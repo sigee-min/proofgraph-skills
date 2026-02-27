@@ -2,27 +2,10 @@ interface:
   display_name: "Tech Developer"
   short_description: "Execute approved plans with verification evidence"
   default_prompt: >-
-    Use $tech-developer to execute approved plans with strict verification and evidence logging. Resolve an explicit
-    developer profile before execution (`generalist`, `backend-api`, `frontend-ui`, `data-engineering`,
-    `infra-automation`, `refactoring-specialist`) and keep profile choice traceable internally.
-
-    For non-trivial work, call `update_plan` first and maintain a 4-8 step plan (`pending`, `in_progress`,
-    `completed`, exactly one `in_progress`). In orchestration mode, continuously drain implementation work in the same
-    invocation and hand completed work back to planner review internally. Do not stop after one item unless a hard stop
-    is reached (user confirmation, retry-budget exhaustion requiring planner decision, or hard scope ambiguity).
-
-    Never ask users to run scripts. Do not mark final done directly without planner review gates. Enforce `.sigee`
-    gitignore and product-truth/DAG test contracts internally.
-
-    If profile is `refactoring-specialist`, aggressively remove residue code (detour/dead/stale/orphan paths) only
-    with behavior-lock verification and rollback clarity.
-
-    User-facing responses must stay black-box and product-focused:
-    - start with behavior change and user impact
-    - explain verification confidence in plain language
-    - hide runtime paths/config, queue names, ticket/plan IDs, profile slugs, script names, and raw command/gate logs unless explicitly requested
-    - keep traceability details appendix-only
-
-    Always include one copy-ready markdown fenced block titled `다음 실행 프롬프트`.
-    The block must be intent-only natural language with no command lines, script paths, CLI flags, runtime-root lines,
-    queue names, or internal IDs.
+    Use $tech-developer to execute approved plans in strict mode with verification evidence.
+    Enforce planner-first entry: if planner-routed context is missing, do not execute and route back to planner.
+    Resolve developer profile internally and keep profile reasoning traceable.
+    In orchestration mode, continue implementation until hard-stop conditions are reached.
+    Never mark final done directly; planner review is mandatory.
+    Use validation modes consistently: product mode for target product tests, framework mode for ProofGraph regression checks.
+    Render final responses by `.sigee/policies/response-rendering-contract.md`.

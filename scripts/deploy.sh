@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACK_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILL_ROOT="$PACK_ROOT/skills"
-TARGET_ROOT="${CODEX_HOME:-$HOME/.codex}/skills"
+TARGET_ROOT=""
 DRY_RUN=0
 SKILLS=()
 
@@ -16,7 +16,7 @@ Usage:
 Options:
   --skill <name>   Deploy one skill (repeatable)
   --all            Deploy all skills in this pack (default)
-  --target <path>  Override CODEX_HOME (default: ${CODEX_HOME:-$HOME/.codex})
+  --target <path>  Override install target path (default: ${CODEX_HOME}/skills)
   --dry-run        Show planned rsync operations only
   --help           Show this message
 USAGE
@@ -52,6 +52,14 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ -z "$TARGET_ROOT" ]]; then
+  if [[ -z "${CODEX_HOME:-}" ]]; then
+    echo "ERROR: CODEX_HOME is not set. Export CODEX_HOME or pass --target <path>." >&2
+    exit 1
+  fi
+  TARGET_ROOT="${CODEX_HOME%/}/skills"
+fi
 
 if ! command -v rsync >/dev/null 2>&1; then
   echo "rsync is required. Please install rsync." >&2

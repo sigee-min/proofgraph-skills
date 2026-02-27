@@ -39,19 +39,15 @@ trap cleanup EXIT
 
 cat > "$POLICY_FILE" <<'EOF'
 # >>> SIGEE_GITIGNORE_POLICY >>>
-# .sigee governance: ignore runtime artifacts, track policy assets.
-.sigee/runtime/
-.sigee/tmp/
-.sigee/locks/
-.sigee/evidence/
-.sigee/reports/
+# .sigee governance: deny-by-default for git hygiene; allow only governed assets.
+.sigee/*
 
-# Keep repository-governed assets tracked.
+# Keep repository-governed assets tracked (allow-list).
 !.sigee/README.md
 !.sigee/policies/
 !.sigee/policies/**
-!.sigee/templates/
-!.sigee/templates/**
+!.sigee/product-truth/
+!.sigee/product-truth/**
 !.sigee/scenarios/
 !.sigee/scenarios/**
 !.sigee/dag/
@@ -59,8 +55,18 @@ cat > "$POLICY_FILE" <<'EOF'
 !.sigee/dag/schema/**
 !.sigee/dag/pipelines/
 !.sigee/dag/pipelines/**
+!.sigee/dag/scenarios/
+!.sigee/dag/scenarios/**
 !.sigee/migrations/
 !.sigee/migrations/**
+
+# Local/generated assets must remain ignored.
+.sigee/templates/
+.sigee/.runtime/
+.sigee/tmp/
+.sigee/locks/
+.sigee/evidence/
+.sigee/reports/
 # <<< SIGEE_GITIGNORE_POLICY <<<
 EOF
 
@@ -109,17 +115,20 @@ else
 fi
 
 REQUIRED_LINES=(
-  ".sigee/runtime/"
+  ".sigee/*"
+  ".sigee/templates/"
+  ".sigee/.runtime/"
   ".sigee/tmp/"
   ".sigee/locks/"
   ".sigee/evidence/"
   ".sigee/reports/"
   "!.sigee/README.md"
   "!.sigee/policies/"
-  "!.sigee/templates/"
+  "!.sigee/product-truth/"
   "!.sigee/scenarios/"
   "!.sigee/dag/schema/"
   "!.sigee/dag/pipelines/"
+  "!.sigee/dag/scenarios/"
   "!.sigee/migrations/"
 )
 

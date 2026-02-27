@@ -1,20 +1,26 @@
 # GitIgnore Policy For .sigee
 
 This policy separates repository knowledge from runtime output.
+It follows a deny-by-default model for `.sigee` to keep git history clean.
 
 ## Tracked (must commit)
 
 - `.sigee/README.md`
 - `.sigee/policies/**`
-- `.sigee/templates/**`
+- `.sigee/product-truth/**`
 - `.sigee/scenarios/**`
+- `.sigee/dag/`
 - `.sigee/dag/schema/**`
 - `.sigee/dag/pipelines/**`
+- `.sigee/dag/scenarios/**`
+- `.sigee/migrations/`
 - `.sigee/migrations/**`
 
 ## Ignored (must not commit by default)
 
-- `.sigee/runtime/**`
+- `.sigee/templates/**`
+- `.sigee/.runtime/**`
+  - includes queue runtime data and done archives (`.sigee/.runtime/orchestration/archive/**`)
 - `.sigee/tmp/**`
 - `.sigee/locks/**`
 - `.sigee/evidence/**`
@@ -29,7 +35,8 @@ This policy separates repository knowledge from runtime output.
 
 ## Rule Design Notes
 
-- Add explicit allow-list exceptions (`!`) for policy/template/scenario/DAG paths.
+- Ignore `.sigee/*` by default, then allow-list only governed assets.
+- Add explicit allow-list exceptions (`!`) only for governance paths (README, policies, product-truth, scenarios, DAG, migrations).
 - Keep runtime directories blocked even when nested files are generated.
 - Promote only curated snapshots, not raw logs.
 
@@ -38,7 +45,9 @@ This policy separates repository knowledge from runtime output.
 The root `.gitignore` must contain both:
 
 1. Ignore paths:
-- `.sigee/runtime/`
+- `.sigee/*`
+- `.sigee/templates/`
+- `.sigee/.runtime/`
 - `.sigee/tmp/`
 - `.sigee/locks/`
 - `.sigee/evidence/`
@@ -47,7 +56,10 @@ The root `.gitignore` must contain both:
 2. Allow-list paths:
 - `!.sigee/README.md`
 - `!.sigee/policies/`
-- `!.sigee/templates/`
+- `!.sigee/product-truth/`
 - `!.sigee/scenarios/`
+- `!.sigee/dag/`
 - `!.sigee/dag/schema/`
 - `!.sigee/dag/pipelines/`
+- `!.sigee/dag/scenarios/`
+- `!.sigee/migrations/`

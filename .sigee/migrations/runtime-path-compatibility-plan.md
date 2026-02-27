@@ -27,4 +27,5 @@
 ## Path Scope
 
 - Legacy runtime plans/evidence/reports path
-- `.sigee/policies`, `.sigee/templates`, `.sigee/scenarios`, `.sigee/dag`
+- `.sigee/policies`, `.sigee/scenarios`, `.sigee/dag` (tracked)
+- `.sigee/templates` (local auto-generated, ignored)

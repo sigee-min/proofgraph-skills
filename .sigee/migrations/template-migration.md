@@ -14,6 +14,12 @@ Legacy template-seeds source:
 - `.sigee/templates/agent-ticket.md`
 - `.sigee/templates/handoff-note.md`
 - `.sigee/templates/weekly-board.md`
+- `.sigee/templates/queue-ticket.md`
+
+## 운영 정책 변경
+
+- 템플릿은 큐 런타임 부트스트랩 시 자동 생성한다(내부 실행).
+- `.sigee/templates/**`는 로컬 전용으로 git에서 추적하지 않는다.
 
 ## 필수 필드 검수
 

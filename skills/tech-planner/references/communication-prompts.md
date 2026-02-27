@@ -14,6 +14,16 @@ Explain in detail:
 Put traceability details (plan path, IDs) at the end.
 ```
 
+## Mandatory response order
+```text
+Default user-facing final response order must be:
+1) behavior and user impact,
+2) verification confidence,
+3) remaining risks or follow-up cautions,
+4) planning/routing rationale.
+Traceability is optional and append-only when explicitly requested.
+```
+
 ## Decision-focused long explanation
 ```text
 For unresolved decisions, provide a long-form explanation per decision:
@@ -37,6 +47,7 @@ When ending the plan handoff, provide a no-CLI next prompt:
 - do not expose shell commands, script paths, or CLI flags
 - do not expose runtime paths/config, queue names, ticket IDs, plan IDs, or internal gate labels
 Explain that default behavior is chat-first and report files are generated only when explicitly requested.
+Include exactly one markdown fenced block titled `다음 실행 프롬프트` at the end.
 ```
 
 ## Loop-mode handoff wording

@@ -1,31 +1,27 @@
-# Prompt Contracts Migrated From Legacy Role Agents
+# Prompt Contracts (Shared)
+
+This file defines minimal role-specific additions.
+The final user response rendering contract is centralized in:
+- `.sigee/policies/response-rendering-contract.md`
 
 ## Shared Guardrails
 
-- never delete active governance documents.
-- deprecate and archive instead of hard removal.
-- include evidence references for key decisions and outcomes.
-- keep ticket status and routing clear with `Next Action`.
+- do not expose orchestration internals by default
+- use product-first language
+- include traceability only when explicitly requested
 
-## Role Contract Fragments
+## Role Fragments
 
-### PM-aligned
-- emphasize planning, scope decisions, and risk discussion.
-- require clear handoff direction and ticket status updates.
+### Planner
+- prioritize scope clarity and routing rationale.
 
-### Spec-aligned
-- center on ReqID clarity and behavior-level contracts.
-- avoid implementation-level code edits.
+### Developer
+- prioritize behavior change + verification confidence + residual risk.
 
-### Implementer-aligned
-- require test-first or test-backed implementation evidence.
-- require ticket status changes and explicit Next Action.
+### Scientist
+- separate evidence-backed fact from project inference.
 
-### Reviewer-aligned
-- preserve the 9.5/10 pass threshold for strict acceptance.
-- require severity-based findings with evidence.
+## Runtime Authority
 
-## Traceability Requirements
-
-- Every final response includes evidence summary and next routing state.
-- Prompt text should keep `ticket status`, `evidence`, and `Next Action` visible.
+- planner is the only `done` transition authority.
+- legacy reviewer-based done semantics are archival only.

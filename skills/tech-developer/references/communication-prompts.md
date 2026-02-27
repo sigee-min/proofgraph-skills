@@ -35,7 +35,7 @@ Never open with IDs, file paths, internal command logs, or task numbers.
 
 ## Mandatory next prompt block
 ```text
-Always end with one copy-ready markdown fenced block titled `다음 실행 프롬프트`.
+Always end with exactly one copy-ready markdown fenced block titled `다음 실행 프롬프트`.
 Default intent is planning review so the next cycle can continue.
 The block must contain intent-only natural language:
 - no shell commands,

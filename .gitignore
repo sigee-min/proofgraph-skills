@@ -19,6 +19,8 @@ Thumbs.db
 !.sigee/dag/schema/**
 !.sigee/dag/pipelines/
 !.sigee/dag/pipelines/**
+!.sigee/dag/scenarios/
+!.sigee/dag/scenarios/**
 !.sigee/migrations/
 !.sigee/migrations/**
 

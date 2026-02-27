@@ -35,7 +35,11 @@ done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-SYS_VALIDATOR="$HOME/.codex/skills/.system/skill-creator/scripts/quick_validate.py"
+if [[ -z "${CODEX_HOME:-}" ]]; then
+  echo "ERROR: CODEX_HOME is required for validator lookup (expected: \$CODEX_HOME/skills/.system/skill-creator/scripts/quick_validate.py)." >&2
+  exit 1
+fi
+SYS_VALIDATOR="$CODEX_HOME/skills/.system/skill-creator/scripts/quick_validate.py"
 SIM_SAMPLE="$SKILL_DIR/references/samples/sample-response-simulation.md"
 AI_SAMPLE="$SKILL_DIR/references/samples/sample-response-aiml.md"
 
@@ -56,4 +60,3 @@ fi
 "$SCRIPT_DIR/output_contract_smoke.sh" "$AI_SAMPLE" --ai
 
 echo "quality_gate passed: $SKILL_DIR"
-

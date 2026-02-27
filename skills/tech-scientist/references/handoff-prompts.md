@@ -1,6 +1,6 @@
 # Handoff Prompt Templates
 
-Always provide one copy-ready markdown fenced block titled `다음 실행 프롬프트`.
+Always provide exactly one copy-ready markdown fenced block titled `다음 실행 프롬프트`.
 Default handoff intent is planning review.
 
 ## Template: Planner Handoff
@@ -31,4 +31,8 @@ Default handoff intent is planning review.
 - runtime 경로, queue 명, ticket/plan ID, 내부 상태 키는 handoff 블록에 노출하지 않는다.
 - 리포트 파일 생성은 사용자 요청 시에만 포함.
 - AI/ML handoff에는 반드시 데이터 누수 방지와 롤백 기준을 포함.
+- scientist 최종 응답은 공통 렌더링 순서를 따른다:
+  - 제품 변화/영향
+  - 검증 신뢰
+  - 잔여 리스크
 - scientist 최종 응답에는 planning review 목적의 `다음 실행 프롬프트`를 정확히 1개 포함한다.

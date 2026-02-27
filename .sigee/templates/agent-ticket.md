@@ -3,6 +3,7 @@
 ## 메타
 - Ticket ID:
 - Summary:
+- Queue:
 - Status:
 - Next Action:
 - Lease:

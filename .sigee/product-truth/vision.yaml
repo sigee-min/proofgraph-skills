@@ -1,0 +1,10 @@
+version: 1
+revision: 4
+updated_at: "2026-02-26T23:59:00Z"
+owner: "tech-planner"
+visions:
+  - id: "VIS-PROOFGRAPH-001"
+    title: "Reliable AI-led solo product delivery"
+    statement: "A single developer can ship complex products with AI while preserving strategic direction, safety, and test-backed confidence."
+    status: "active"
+    notes: "Top-level direction for governance, execution safety, and long-term maintainability."

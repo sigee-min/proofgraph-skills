@@ -12,6 +12,7 @@ description: Evidence-backed technical planning for complex implementation work.
 - Produce one execution-ready plan document unless the user explicitly requests multiple plans.
 - Keep plans concrete enough that an implementation agent can execute with minimal guesswork.
 - Treat `.sigee` governance documents as the default policy reference for workflow rules, templates, and runtime orchestration decisions.
+- Apply `.sigee/policies/response-rendering-contract.md` for final user-facing response rendering.
 
 ## Workflow
 1. Classify the request: trivial, feature, refactor, architecture, or research.
@@ -71,6 +72,7 @@ description: Evidence-backed technical planning for complex implementation work.
   - scientist/developer completion -> `planner-review` (with evidence links)
   - planner review outcome -> `done` or requeue (`scientist-todo` / `developer-todo`)
   - developer route should carry profile intent metadata when domain specialization or cleanup-heavy work is expected (`profile=<slug>`)
+  - direct scientist/developer execution without planner-routed context is out-of-contract and must be blocked
 - Done archive rules:
   - `done` 전이는 완료 즉시 `<runtime-root>/orchestration/archive/done-YYYY-MM.tsv`로 기록한다.
   - `done` 큐는 장기 누적 저장소로 사용하지 않는다.
@@ -174,31 +176,18 @@ description: Evidence-backed technical planning for complex implementation work.
 - Only mention persistent report generation when explicitly requested.
 
 ## User Communication Policy
-- Explain outcomes in content-first language before referencing IDs or file paths.
-- Start with:
-  - what the user asked for
-  - what will change for users or stakeholders
-  - why this approach is selected
-- Use long-form explanations for handoff and decision points. Include context, trade-offs, and expected impact.
-- Treat orchestration as a black box in user-facing messages.
-  - do not expose queue names, phase names, done-gate labels, or lease/state-machine terms unless explicitly requested
-  - do not expose raw queue helper keys (`LOOP_STATUS`, `NEXT_PROMPT_*`, `CLAIM_*`) in normal product reports
-  - do not expose runtime path/config lines (for example `runtime-root=...`) in default user-facing prompts
-- Default output is product-first:
-  - user-visible change
-  - scenario/test confidence
-  - next product decision
-- Never expose internal artifact names in default user mode:
-  - queue names, ticket IDs, plan IDs, backlog file names, script file names
-- Mention IDs (`plan-id`, ticket IDs) only in a final traceability section or when explicitly requested.
+- Follow `.sigee/policies/response-rendering-contract.md` as the single response rendering source.
+- Keep user-facing planner reports product-first and routing-focused.
+- Keep internal IDs/paths/queue state appendix-only when explicitly requested.
 
 ## Output Contract
 Return:
-- long-form content summary (goal, scope, impact, approach)
-- key decisions with rationale and trade-offs
-- unresolved decisions that require user input
-- plan path (traceability, optional in default user mode)
-- one copy-ready `다음 실행 프롬프트` markdown block for the selected target:
+- behavior and user impact summary
+- verification confidence summary
+- remaining risks, unresolved decisions, and follow-up cautions
+- planning decisions and routing rationale (scientist-first vs implementation-ready)
+- optional traceability appendix when requested
+- one routing-aligned `다음 실행 프롬프트` block at the end:
   - scientist mode: when scientific/numerical/simulation/AI uncertainty remains; request evidence package + planning review return
   - developer mode: only when implementation-ready
     - DAG mode: request strict DAG workflow execution in natural language (no command lines)
@@ -220,9 +209,11 @@ Return:
 - Scenario template: `references/scenario-template.md`
 - DAG mapping rules: `references/dag-mapping-rules.md`
 - Governance baseline: `.sigee/README.md`, `.sigee/policies/gitignore-policy.md`
+- Shared response contract: `.sigee/policies/response-rendering-contract.md`
 - Product-truth policy: `.sigee/policies/product-truth-ssot.md`, `.sigee/product-truth/README.md`
 - Orchestration policy: `.sigee/policies/orchestration-loop.md`
 - Queue runtime helper: `scripts/orchestration_queue.sh` (`loop-status --user-facing`, `next-prompt --user-facing`)
 - Continuous loop helper: `scripts/orchestration_autoloop.sh`
 - Archive maintenance helper: `scripts/orchestration_archive.sh`
 - DAG scenario CRUD helper: `scripts/dag_scenario_crud.sh`
+- Planner entry guard: `scripts/planner_entry_guard.sh`

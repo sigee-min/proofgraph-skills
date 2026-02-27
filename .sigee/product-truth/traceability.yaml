@@ -1,0 +1,65 @@
+version: 1
+revision: 4
+updated_at: "2026-02-26T23:59:00Z"
+owner: "tech-planner"
+links:
+  - outcome_id: "OUT-ORCH-001"
+    capability_id: "CAP-ORCH-STATE"
+    scenario_id: "orchestration_state_lifecycle"
+    dag_node_prefix: "orchestration_state_lifecycle"
+    stability_layer: "core"
+    required_test_contract:
+      unit_normal: 2
+      unit_boundary: 2
+      unit_failure: 2
+      boundary_smoke: 5
+    status: "active"
+    notes: ""
+  - outcome_id: "OUT-ORCH-001"
+    capability_id: "CAP-ORCH-ERROR"
+    scenario_id: "orchestration_error_recovery"
+    dag_node_prefix: "orchestration_error_recovery"
+    stability_layer: "core"
+    required_test_contract:
+      unit_normal: 2
+      unit_boundary: 2
+      unit_failure: 2
+      boundary_smoke: 5
+    status: "active"
+    notes: ""
+  - outcome_id: "OUT-ORCH-001"
+    capability_id: "CAP-ORCH-OBS"
+    scenario_id: "orchestration_observability"
+    dag_node_prefix: "orchestration_observability"
+    stability_layer: "system"
+    required_test_contract:
+      unit_normal: 2
+      unit_boundary: 2
+      unit_failure: 2
+      boundary_smoke: 5
+    status: "active"
+    notes: ""
+  - outcome_id: "OUT-ORCH-001"
+    capability_id: "CAP-ORCH-SCALE"
+    scenario_id: "orchestration_scale_validation"
+    dag_node_prefix: "orchestration_scale_validation"
+    stability_layer: "experimental"
+    required_test_contract:
+      unit_normal: 2
+      unit_boundary: 2
+      unit_failure: 2
+      boundary_smoke: 5
+    status: "active"
+    notes: ""
+  - outcome_id: "OUT-ORCH-001"
+    capability_id: "CAP-ORCH-PROFILE"
+    scenario_id: "orchestration_refactoring_specialist"
+    dag_node_prefix: "orchestration_refactoring_specialist"
+    stability_layer: "system"
+    required_test_contract:
+      unit_normal: 2
+      unit_boundary: 2
+      unit_failure: 2
+      boundary_smoke: 5
+    status: "active"
+    notes: "Profile specialization and residue cleanup safety coverage."

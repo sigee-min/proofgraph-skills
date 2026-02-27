@@ -1,9 +1,14 @@
-# Outline v1 Role Boundaries
+# Outline v1 Role Boundaries (Archived)
+
+> Archived legacy reference.
+> This file is not normative for current runtime behavior.
+> Current governance source: `.sigee/policies/orchestration-loop.md`.
 
 ## Shared Rule
 
 - Responsibility is represented by `Status + Next Action + Lease + Evidence Links`.
-- Done exclusivity: only reviewer-equivalent flow can close to Done.
+- Done exclusivity (legacy): reviewer-equivalent flow.
+- Current runtime override: planner review is the only `done` transition authority.
 
 ## Project Manager Boundary
 
@@ -25,6 +30,6 @@
 
 ## Reviewer Boundary
 
-- Owns pass/fail judgment and Done gate.
+- Historical note only: old reviewer pass/fail judgement + Done gate.
 - Applies severity and confidence-based findings.
 - Blocks release when evidence quality is insufficient.

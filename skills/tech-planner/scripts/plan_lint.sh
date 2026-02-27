@@ -7,8 +7,7 @@ Usage:
   plan_lint.sh <plan-file>
 
 Example:
-  SIGEE_RUNTIME_ROOT=.codex plan_lint.sh .codex/plans/auth-refactor.md
-  SIGEE_RUNTIME_ROOT=.runtime plan_lint.sh .runtime/plans/auth-refactor.md
+  SIGEE_RUNTIME_ROOT=.sigee/.runtime plan_lint.sh .sigee/.runtime/plans/auth-refactor.md
 USAGE
 }
 
@@ -18,10 +17,10 @@ if [[ $# -ne 1 ]]; then
 fi
 
 PLAN_FILE="$1"
-RUNTIME_ROOT="${SIGEE_RUNTIME_ROOT:-.codex}"
+RUNTIME_ROOT="${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}"
 
-if [[ "$RUNTIME_ROOT" == */* ]]; then
-  echo "ERROR: SIGEE_RUNTIME_ROOT must be a single directory name (e.g. .codex or .runtime)" >&2
+if [[ -z "$RUNTIME_ROOT" || "$RUNTIME_ROOT" == "." || "$RUNTIME_ROOT" == ".." || "$RUNTIME_ROOT" == /* || "$RUNTIME_ROOT" == *".."* ]]; then
+  echo "ERROR: SIGEE_RUNTIME_ROOT must be a safe relative path (e.g. .sigee/.runtime)" >&2
   exit 1
 fi
 
@@ -35,6 +34,8 @@ NORM_PLAN="${ABS_PLAN//\\//}"
 ERRORS=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GITIGNORE_GUARD_SCRIPT="$SCRIPT_DIR/sigee_gitignore_guard.sh"
+PRODUCT_TRUTH_VALIDATE_SCRIPT="$SCRIPT_DIR/product_truth_validate.sh"
+GOAL_GOV_VALIDATE_SCRIPT="$SCRIPT_DIR/goal_governance_validate.sh"
 
 fail() {
   echo "LINT ERROR: $1" >&2
@@ -91,6 +92,22 @@ else
   fi
 fi
 
+if [[ ! -x "$PRODUCT_TRUTH_VALIDATE_SCRIPT" ]]; then
+  fail "Missing executable product-truth validator: $PRODUCT_TRUTH_VALIDATE_SCRIPT"
+else
+  if ! "$PRODUCT_TRUTH_VALIDATE_SCRIPT" --project-root "$PROJECT_ROOT"; then
+    fail "Product-truth cross-reference validation failed"
+  fi
+fi
+
+if [[ ! -x "$GOAL_GOV_VALIDATE_SCRIPT" ]]; then
+  fail "Missing executable goal-governance validator: $GOAL_GOV_VALIDATE_SCRIPT"
+else
+  if ! "$GOAL_GOV_VALIDATE_SCRIPT" --project-root "$PROJECT_ROOT" --strict; then
+    fail "Goal-governance validation failed"
+  fi
+fi
+
 check_heading "## PlanSpec v2"
 check_heading "## TL;DR"
 check_heading "## Objective"
@@ -121,8 +138,10 @@ TASK_LINES=()
 while IFS= read -r line; do
   TASK_LINES+=("$line")
 done < <(grep -nE '^- \[ \]' "$PLAN_FILE" || true)
-if [[ ${#TASK_LINES[@]} -eq 0 ]]; then
-  fail "At least one unchecked task '- [ ]' is required"
+
+CHECKED_TASK_COUNT="$(grep -cE '^- \[x\]' "$PLAN_FILE" || true)"
+if [[ ${#TASK_LINES[@]} -eq 0 && "$CHECKED_TASK_COUNT" -eq 0 ]]; then
+  fail "At least one task marker is required ('- [ ]' or '- [x]')"
 fi
 
 FILE_LINES="$(wc -l < "$PLAN_FILE" | tr -d ' ')"

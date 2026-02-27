@@ -7,8 +7,7 @@ Usage:
   report_generate.sh <plan-file>
 
 Example:
-  SIGEE_RUNTIME_ROOT=.codex report_generate.sh .codex/plans/auth-refactor.md
-  SIGEE_RUNTIME_ROOT=.runtime report_generate.sh .runtime/plans/auth-refactor.md
+  SIGEE_RUNTIME_ROOT=.sigee/.runtime report_generate.sh .sigee/.runtime/plans/auth-refactor.md
 USAGE
 }
 
@@ -18,10 +17,10 @@ if [[ $# -ne 1 ]]; then
 fi
 
 PLAN_FILE="$1"
-RUNTIME_ROOT="${SIGEE_RUNTIME_ROOT:-.codex}"
+RUNTIME_ROOT="${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}"
 
-if [[ "$RUNTIME_ROOT" == */* ]]; then
-  echo "ERROR: SIGEE_RUNTIME_ROOT must be a single directory name (e.g. .codex or .runtime)" >&2
+if [[ -z "$RUNTIME_ROOT" || "$RUNTIME_ROOT" == "." || "$RUNTIME_ROOT" == ".." || "$RUNTIME_ROOT" == /* || "$RUNTIME_ROOT" == *".."* ]]; then
+  echo "ERROR: SIGEE_RUNTIME_ROOT must be a safe relative path (e.g. .sigee/.runtime)" >&2
   exit 1
 fi
 

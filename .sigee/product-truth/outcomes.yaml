@@ -1,0 +1,16 @@
+version: 1
+revision: 4
+updated_at: "2026-02-26T23:59:00Z"
+owner: "tech-planner"
+outcomes:
+  - id: "OUT-ORCH-001"
+    objective_id: "OBJ-ORCH-GOV-001"
+    title: "Production-grade planner-centric orchestration loop"
+    statement: "Planner, scientist, and developer loops execute deterministic DAG work with evidence-gated completion and observable runtime state."
+    status: "active"
+    evidence_required:
+      - "Queue transition gates enforce planner-only done and PASS evidence requirements."
+      - "DAG execution emits machine-readable state and trace artifacts."
+      - "Synthetic scale scenarios (50, 200, 500 nodes) run under defined performance budgets."
+      - "Developer profile routing and refactoring-specialist cleanup gates preserve behavior while reducing residue code."
+    notes: "Aligned to external architecture review feedback on 2026-02-26."

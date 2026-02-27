@@ -1,6 +1,14 @@
 ## Non-technical summary
 - We choose a stable integration approach for rigid-body collision simulation with bounded drift.
 
+## Verification confidence
+- Confidence: Medium.
+- Basis: two primary references + deterministic replay constraints + explicit fail criteria.
+
+## Remaining risks, unknowns, and open decisions
+- Risk: high-contact scenes may violate latency budget.
+- Unknown: sensitivity of stability to contact ordering.
+
 ## Problem formulation
 - Objective: minimize penetration and energy drift under fixed compute budget.
 - Constraints: real-time step at 60Hz, deterministic replay required.
@@ -47,10 +55,6 @@ Stability/Convergence Notes:
 - Metrics: penetration depth, energy drift, frame time p95.
 - Baseline: explicit Euler implementation.
 - Fail criteria: drift above threshold or p95 latency budget violation.
-
-## Risks, unknowns, and open decisions
-- Risk: high-contact scenes may violate latency budget.
-- Unknown: sensitivity of stability to contact ordering.
 
 ## 다음 실행 프롬프트
 ```md

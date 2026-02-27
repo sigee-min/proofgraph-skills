@@ -43,17 +43,8 @@ Status rules:
     - `STOP_USER_CONFIRMATION`: blocked에서 사용자 확정 필요 항목 발견 시 종료
     - `CONTINUE`: 그 외 상태
 
-Debug examples (internal maintainers only):
-  SIGEE_RUNTIME_ROOT=.sigee/.runtime orchestration_queue.sh init
-  SIGEE_RUNTIME_ROOT=.sigee/.runtime orchestration_queue.sh add --queue planner-inbox --id FEAT-001 --title "결제 API 도입" --next-action "planner triage"
-  SIGEE_RUNTIME_ROOT=.sigee/.runtime orchestration_queue.sh move --id FEAT-001 --from planner-inbox --to scientist-todo --status pending
-  SIGEE_RUNTIME_ROOT=.sigee/.runtime orchestration_queue.sh claim --queue developer-todo --worker tech-developer
-  SIGEE_RUNTIME_ROOT=.sigee/.runtime orchestration_queue.sh reconcile-exhausted --all --actor tech-planner
-  SIGEE_RUNTIME_ROOT=.sigee/.runtime orchestration_queue.sh triage-blocked --limit 20
-  SIGEE_RUNTIME_ROOT=.sigee/.runtime orchestration_queue.sh weekly-retry-summary --weeks 1
-  SIGEE_RUNTIME_ROOT=.sigee/.runtime orchestration_queue.sh loop-status
-  SIGEE_RUNTIME_ROOT=.sigee/.runtime orchestration_queue.sh next-prompt
-  SIGEE_RUNTIME_ROOT=.sigee/.runtime SIGEE_QUEUE_ACTOR=tech-planner orchestration_queue.sh move --id FEAT-001 --from planner-review --to done --evidence ".sigee/.runtime/dag/state/last-run.json"
+Debug examples are intentionally omitted from help output.
+Use maintainers' internal docs for operational command walkthroughs.
 USAGE
 }
 
@@ -66,6 +57,36 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GITIGNORE_GUARD_SCRIPT="$SCRIPT_DIR/sigee_gitignore_guard.sh"
 PRODUCT_TRUTH_VALIDATE_SCRIPT="$SCRIPT_DIR/product_truth_validate.sh"
+GOAL_GOV_VALIDATE_SCRIPT="$SCRIPT_DIR/goal_governance_validate.sh"
+USER_FACING_GUARD_SCRIPT="$SCRIPT_DIR/user_facing_guard.sh"
+USER_FACING_RENDERER_SCRIPT="$SCRIPT_DIR/user_facing_renderer.sh"
+QUEUE_STATE_MODULE_SCRIPT="$SCRIPT_DIR/orchestration_queue_state.sh"
+QUEUE_STORE_MODULE_SCRIPT="$SCRIPT_DIR/orchestration_queue_store.sh"
+
+if [[ ! -f "$USER_FACING_GUARD_SCRIPT" ]]; then
+  echo "ERROR: missing shared user-facing guard: $USER_FACING_GUARD_SCRIPT" >&2
+  exit 1
+fi
+if [[ ! -f "$USER_FACING_RENDERER_SCRIPT" ]]; then
+  echo "ERROR: missing shared user-facing renderer: $USER_FACING_RENDERER_SCRIPT" >&2
+  exit 1
+fi
+if [[ ! -f "$QUEUE_STATE_MODULE_SCRIPT" ]]; then
+  echo "ERROR: missing queue state module: $QUEUE_STATE_MODULE_SCRIPT" >&2
+  exit 1
+fi
+if [[ ! -f "$QUEUE_STORE_MODULE_SCRIPT" ]]; then
+  echo "ERROR: missing queue store module: $QUEUE_STORE_MODULE_SCRIPT" >&2
+  exit 1
+fi
+# shellcheck disable=SC1090
+source "$USER_FACING_GUARD_SCRIPT"
+# shellcheck disable=SC1090
+source "$USER_FACING_RENDERER_SCRIPT"
+# shellcheck disable=SC1090
+source "$QUEUE_STATE_MODULE_SCRIPT"
+# shellcheck disable=SC1090
+source "$QUEUE_STORE_MODULE_SCRIPT"
 
 STANDARD_QUEUES=(
   "planner-inbox"
@@ -331,7 +352,10 @@ validate_done_gate() {
     exit 1
   fi
 
-  local scenario_dir="$project_root/$RUNTIME_ROOT/dag/scenarios"
+  local scenario_dir="$project_root/.sigee/dag/scenarios"
+  if [[ ! -d "$scenario_dir" ]]; then
+    scenario_dir="$project_root/$RUNTIME_ROOT/dag/scenarios"
+  fi
   if [[ -d "$scenario_dir" ]] && find "$scenario_dir" -maxdepth 1 -type f -name '*.scenario.yml' | grep -q .; then
     if [[ ! -x "$PRODUCT_TRUTH_VALIDATE_SCRIPT" ]]; then
       echo "ERROR: missing executable validator for done gate: $PRODUCT_TRUTH_VALIDATE_SCRIPT" >&2
@@ -341,6 +365,16 @@ validate_done_gate() {
       --project-root "$project_root" \
       --scenario-dir "$scenario_dir" \
       --require-scenarios >/dev/null
+
+    if [[ ! -x "$GOAL_GOV_VALIDATE_SCRIPT" ]]; then
+      echo "ERROR: missing executable goal-governance validator for done gate: $GOAL_GOV_VALIDATE_SCRIPT" >&2
+      exit 1
+    fi
+    "$GOAL_GOV_VALIDATE_SCRIPT" \
+      --project-root "$project_root" \
+      --scenario-dir "$scenario_dir" \
+      --require-scenarios \
+      --strict >/dev/null
   fi
 }
 
@@ -868,6 +902,7 @@ emit_loop_status_snapshot() {
   local output_mode="${2:-machine}"
   local loop_status reason planner_inbox_count scientist_count developer_count planner_review_count
   local blocked_count blocked_user_count actionable_total user_ids
+  local summary_line
 
   loop_status="$(printf "%s" "$snapshot" | awk -F'\t' '{print $1}')"
   reason="$(printf "%s" "$snapshot" | awk -F'\t' '{print $2}')"
@@ -883,18 +918,19 @@ emit_loop_status_snapshot() {
   if [[ "$output_mode" == "user" ]]; then
     case "$loop_status" in
       CONTINUE)
-        echo "요약: 다음 제품 작업으로 바로 진행할 수 있습니다."
+        summary_line="요약: 다음 제품 작업으로 바로 진행할 수 있습니다."
         ;;
       STOP_DONE)
-        echo "요약: 현재 사이클 목표가 완료되었습니다."
+        summary_line="요약: 현재 사이클 목표가 완료되었습니다."
         ;;
       STOP_USER_CONFIRMATION)
-        echo "요약: 다음 단계로 가기 전에 사용자 결정이 필요합니다."
+        summary_line="요약: 다음 단계로 가기 전에 사용자 결정이 필요합니다."
         ;;
       *)
-        echo "요약: $reason"
+        summary_line="요약: $reason"
         ;;
     esac
+    sanitize_user_facing_summary_line "$summary_line"
     return 0
   fi
 
@@ -977,28 +1013,28 @@ next_prompt_message() {
   local queue="$2"
   case "$target:$queue" in
     tech-planner:planner-review)
-      printf "%s" "planner-review 큐의 리뷰 대기 항목을 사용자 영향 기준으로 검토하고 done 승인 또는 재작업 라우팅을 결정해줘. 승인/반려 사유를 내용 중심으로 정리하고, 처리 후 다음 실행 프롬프트를 다시 제시해줘."
+      printf "%s" "방금 반영된 변경이 제품 목표와 일치하는지 검토해줘. 승인 여부를 결정하고 보완이 필요하면 사용자 영향이 큰 개선 1건만 제시해줘."
       ;;
     tech-planner:blocked)
-      printf "%s" "blocked 큐를 우선순위와 에이징 기준으로 triage해줘. retry_budget 소진 항목은 재기획(우회/범위축소/예산 상향/중단) 중 하나를 결정하고 scientist-todo/developer-todo/planner-inbox로 재라우팅해줘."
+      printf "%s" "진행을 막는 의사결정 항목을 우선순위로 정리해줘. 각 항목마다 권장 선택과 사용자 영향을 함께 제시하고 다음 실행 방향을 결정해줘."
       ;;
     tech-scientist:scientist-todo)
-      printf "%s" "scientist-todo 큐의 최우선 항목부터 처리해줘. 문제 정식화, 근거 문헌, 적용 의사코드, 검증 계획을 포함한 evidence package를 만들고 planner-review로 넘겨줘."
+      printf "%s" "제품 리스크를 줄일 수 있는 과학/수학 검증 과제 1건을 우선 처리해줘. 근거, 적용 방향, 검증 계획을 정리해줘."
       ;;
     tech-developer:developer-todo)
-      printf "%s" "developer-todo 큐의 최우선 항목부터 strict 모드로 구현해줘. 테스트 근거를 남기고 planner-review로 handoff해줘."
+      printf "%s" "사용자 가치가 가장 큰 구현 과제 1건을 strict로 완료해줘. 검증 근거와 함께 결과를 보고해줘."
       ;;
     tech-planner:planner-inbox)
-      printf "%s" "planner-inbox 신규 요구를 분해해서 scientist/developer 라우팅 계획을 수립해줘. 모호성은 질문으로 해소하고, 실행 가능한 다음 프롬프트를 제시해줘."
+      printf "%s" "신규 요구를 제품 기능으로 분해하고 우선순위를 정해줘. 바로 실행할 다음 작업 1건을 제시해줘."
       ;;
     tech-planner:blocked-user-confirmation)
-      printf "%s" "루프를 종료하고 사용자 확정이 필요한 blocked 항목만 요약해줘. 각 항목에 대해 선택지(진행/중단/우회/범위축소)와 영향도를 함께 제시해줘."
+      printf "%s" "지금 사용자 결정이 필요한 항목만 요약해줘. 각 항목마다 권장 선택과 영향을 짧게 정리해줘."
       ;;
     tech-planner:completed)
-      printf "%s" "현재 사이클은 완료되었어. 다음 기능 개발을 시작하기 위해 사용자 목표를 1개 선정하고, 실행 가능한 신규 계획을 수립해 planner-inbox부터 다시 루프를 시작해줘."
+      printf "%s" "현재 사이클은 완료되었어. 다음 제품 목표 1개를 정하고 바로 시작할 첫 작업 1건을 제안해줘."
       ;;
     *)
-      printf "%s" "현재 큐의 즉시 작업이 없으니 프로덕션 완성도를 높이는 다음 개선 파동을 기획해줘. 우선순위는 안정성, 관측성, 실패복구, 운영비용 최적화 순서로 잡아줘."
+      printf "%s" "다음으로 사용자 가치가 큰 작업 1건을 선정해줘. 선정 이유와 기대 변화를 함께 설명해줘."
       ;;
   esac
 }
@@ -1034,6 +1070,38 @@ next_prompt_message_user_facing() {
   esac
 }
 
+user_facing_internal_leak_detected() {
+  sigee_user_facing_internal_leak_detected "${1:-}"
+}
+
+sanitize_user_facing_summary_line() {
+  sigee_render_sanitize_summary_line "${1:-}"
+}
+
+sanitize_user_facing_prompt_message() {
+  sigee_render_sanitize_prompt_message "${1:-}"
+}
+
+sanitize_user_facing_context_text() {
+  sigee_render_sanitize_context_text "${1:-}"
+}
+
+product_goal_summary_text() {
+  sigee_render_product_goal_summary_text "${1:-}"
+}
+
+recent_change_summary_text() {
+  sigee_render_recent_change_summary_text "${1:-}" "$RUNTIME_ROOT"
+}
+
+build_user_facing_why_now_line() {
+  sigee_render_build_why_now_line "${1:-}" "$RUNTIME_ROOT"
+}
+
+append_user_facing_context_line() {
+  sigee_render_append_context_line "${1:-}" "${2:-}" "$RUNTIME_ROOT"
+}
+
 emit_next_prompt_recommendation() {
   local project_root="$1"
   local output_mode="${2:-machine}"
@@ -1047,6 +1115,8 @@ emit_next_prompt_recommendation() {
   reason="$(printf "%s" "$rec" | awk -F'\t' '{print $3}')"
   if [[ "$output_mode" == "user" ]]; then
     message="$(next_prompt_message_user_facing "$target" "$queue")"
+    message="$(append_user_facing_context_line "$project_root" "$message")"
+    message="$(sanitize_user_facing_prompt_message "$message")"
   else
     message="$(next_prompt_message "$target" "$queue")"
   fi
@@ -1061,7 +1131,6 @@ emit_next_prompt_recommendation() {
   printf '\n'
   if [[ "$output_mode" != "user" ]]; then
     printf '$%s\n' "$target"
-    printf '%s\n' 'runtime-root = ${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}'
     printf '\n'
   fi
   printf '%s\n' "$message"
@@ -1118,26 +1187,6 @@ cmd_next_prompt() {
   project_root="$(resolve_project_root "$project_root")"
   bootstrap_runtime "$project_root"
   emit_next_prompt_recommendation "$project_root" "$output_mode"
-}
-
-auto_lease_for_transition() {
-  local to_queue="$1"
-  local status="$2"
-  local worker="$3"
-  local now="$4"
-  if [[ "$to_queue" == "planner-review" || "$to_queue" == "done" || "$to_queue" == "blocked" ]]; then
-    printf "released:%s" "$now"
-    return 0
-  fi
-  if [[ "$status" == "in_progress" ]]; then
-    if [[ -n "$worker" ]]; then
-      printf "held:%s:%s" "$worker" "$now"
-      return 0
-    fi
-    printf "held:unknown:%s" "$now"
-    return 0
-  fi
-  printf "none"
 }
 
 is_standard_queue() {
@@ -1240,698 +1289,9 @@ validate_positive_int() {
   fi
 }
 
-default_retry_budget() {
-  printf "3"
-}
-
-default_phase_for_queue() {
-  local queue="$1"
-  local status="$2"
-  case "$status" in
-    done) printf "done" ;;
-    review) printf "evidence_collected" ;;
-    in_progress) printf "running" ;;
-    blocked) printf "running" ;;
-    pending)
-      case "$queue" in
-        planner-inbox) printf "planned" ;;
-        *) printf "ready" ;;
-      esac
-      ;;
-    *)
-      printf "ready"
-      ;;
-  esac
-}
-
-default_error_class_for_queue() {
-  local queue="$1"
-  local status="$2"
-  case "$queue:$status" in
-    blocked:blocked) printf "soft_fail" ;;
-    *) printf "none" ;;
-  esac
-}
-
-validate_phase_transition() {
-  local from_phase="$1"
-  local to_phase="$2"
-  local from_queue="$3"
-  local to_queue="$4"
-  local to_status="$5"
-
-  if [[ "$from_phase" == "$to_phase" ]]; then
-    return 0
-  fi
-
-  # Planner done-gate implicitly validates evidence_collected -> done.
-  if [[ "$from_phase" == "evidence_collected" && "$to_phase" == "done" && "$to_queue" == "done" && "$to_status" == "done" ]]; then
-    return 0
-  fi
-
-  case "$from_phase:$to_phase" in
-    planned:ready|planned:running|ready:running|running:evidence_collected|running:ready|evidence_collected:verified|evidence_collected:ready|verified:done|verified:ready)
-      return 0
-      ;;
-  esac
-
-  if [[ "$to_queue" == "blocked" ]]; then
-    case "$to_phase" in
-      planned|ready|running|evidence_collected|verified)
-        return 0
-        ;;
-    esac
-  fi
-
-  if [[ "$from_queue" == "blocked" && "$to_queue" != "done" ]]; then
-    case "$to_phase" in
-      ready|running)
-        return 0
-        ;;
-    esac
-  fi
-
-  echo "ERROR: invalid lifecycle transition '${from_phase}' -> '${to_phase}' for move ${from_queue} -> ${to_queue} (status=${to_status})." >&2
-  exit 1
-}
-
-default_status_for_queue() {
-  local queue="$1"
-  case "$queue" in
-    planner-review) printf "review" ;;
-    blocked) printf "blocked" ;;
-    done) printf "done" ;;
-    *) printf "pending" ;;
-  esac
-}
-
-resolve_project_root() {
-  local candidate="${1:-$(pwd)}"
-  if [[ ! -d "$candidate" ]]; then
-    echo "ERROR: project root not found: $candidate" >&2
-    exit 1
-  fi
-  if git -C "$candidate" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    git -C "$candidate" rev-parse --show-toplevel
-  else
-    (cd "$candidate" && pwd)
-  fi
-}
-
-queue_file_path() {
-  local project_root="$1"
-  local queue="$2"
-  printf "%s/%s/orchestration/queues/%s.tsv" "$project_root" "$RUNTIME_ROOT" "$queue"
-}
-
-archive_dir_path() {
-  local project_root="$1"
-  printf "%s/%s/orchestration/archive" "$project_root" "$RUNTIME_ROOT"
-}
-
-archive_file_path() {
-  local project_root="$1"
-  local archive_dir
-  archive_dir="$(archive_dir_path "$project_root")"
-  printf "%s/done-%s.tsv" "$archive_dir" "$(date -u '+%Y-%m')"
-}
-
-history_dir_path() {
-  local project_root="$1"
-  printf "%s/%s/orchestration/history" "$project_root" "$RUNTIME_ROOT"
-}
-
-retry_history_file_path() {
-  local project_root="$1"
-  printf "%s/retry-events.tsv" "$(history_dir_path "$project_root")"
-}
-
-weekly_retry_summary_file_path() {
-  local project_root="$1"
-  local weeks="${2:-1}"
-  local week_token
-  week_token="$(date -u '+%G-W%V')"
-  printf "%s/weekly-retry-summary-%s-last%sw.md" "$(history_dir_path "$project_root")" "$week_token" "$weeks"
-}
-
-normalize_queue_file_schema() {
-  local queue_file="$1"
-  local queue_name
-  queue_name="$(basename "$queue_file" .tsv)"
-  local tmp_file
-  tmp_file="$(mktemp)"
-  awk -F'\t' -v OFS='\t' -v queue_name="$queue_name" '
-    BEGIN {
-      print "id","status","worker","title","source","updated_at","note","next_action","lease","evidence_links","phase","error_class","attempt_count","retry_budget"
-    }
-    NR==1 { next }
-    {
-      for (i=1; i<=14; i++) {
-        if (i > NF) $i=""
-      }
-      if ($11=="") {
-        if ($2=="done") $11="done"
-        else if ($2=="review") $11="evidence_collected"
-        else if ($2=="in_progress") $11="running"
-        else if ($2=="blocked") $11="running"
-        else if ($2=="pending" && queue_name=="planner-inbox") $11="planned"
-        else if ($2=="pending") $11="ready"
-        else $11="ready"
-      }
-      if ($12=="") {
-        if ($2=="blocked") $12="soft_fail"
-        else $12="none"
-      }
-      if ($13=="" || $13 !~ /^[0-9]+$/) $13="0"
-      if ($14=="" || $14 !~ /^[0-9]+$/ || $14 < 1) $14="3"
-      print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
-    }
-  ' "$queue_file" > "$tmp_file"
-  mv "$tmp_file" "$queue_file"
-}
-
-ensure_queue_file() {
-  local queue_file="$1"
-  mkdir -p "$(dirname "$queue_file")"
-  if [[ ! -f "$queue_file" ]]; then
-    printf "%s\n" "$QUEUE_HEADER" > "$queue_file"
-    return 0
-  fi
-  local header
-  header="$(head -n1 "$queue_file" || true)"
-  if [[ "$header" != "$QUEUE_HEADER" ]]; then
-    normalize_queue_file_schema "$queue_file"
-  fi
-}
-
-ensure_archive_file() {
-  local archive_file="$1"
-  mkdir -p "$(dirname "$archive_file")"
-  if [[ ! -f "$archive_file" ]]; then
-    printf "%s\n" "$ARCHIVE_HEADER" > "$archive_file"
-    return 0
-  fi
-  local header
-  header="$(head -n1 "$archive_file" || true)"
-  if [[ "$header" != "$ARCHIVE_HEADER" ]]; then
-    local tmp_file
-    tmp_file="$(mktemp)"
-    awk -F'\t' -v OFS='\t' '
-      BEGIN {
-        print "id","status","worker","title","source","updated_at","note","next_action","lease","evidence_links","phase","error_class","attempt_count","retry_budget","archived_at","archived_by"
-      }
-      NR==1 { next }
-      {
-        for (i=1; i<=16; i++) {
-          if (i > NF) $i=""
-        }
-        if ($11=="") {
-          if ($2=="done") $11="done"
-          else if ($2=="review") $11="evidence_collected"
-          else if ($2=="in_progress") $11="running"
-          else if ($2=="blocked") $11="running"
-          else if ($2=="pending") $11="ready"
-          else $11="ready"
-        }
-        if ($12=="") {
-          if ($2=="blocked") $12="soft_fail"
-          else $12="none"
-        }
-        if ($13=="" || $13 !~ /^[0-9]+$/) $13="0"
-        if ($14=="" || $14 !~ /^[0-9]+$/ || $14 < 1) $14="3"
-        print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16
-      }
-    ' "$archive_file" > "$tmp_file"
-    mv "$tmp_file" "$archive_file"
-  fi
-}
-
-ensure_retry_history_file() {
-  local history_file="$1"
-  mkdir -p "$(dirname "$history_file")"
-  if [[ ! -f "$history_file" ]]; then
-    printf "%s\n" "$RETRY_HISTORY_HEADER" > "$history_file"
-    return 0
-  fi
-  local header
-  header="$(head -n1 "$history_file" || true)"
-  if [[ "$header" != "$RETRY_HISTORY_HEADER" ]]; then
-    local tmp_file
-    tmp_file="$(mktemp)"
-    awk -F'\t' -v OFS='\t' '
-      BEGIN {
-        print "ts_utc","event_type","id","from_queue","to_queue","status","error_class","attempt_count","retry_budget","priority","actor","note"
-      }
-      NR==1 { next }
-      {
-        for (i=1; i<=12; i++) {
-          if (i > NF) $i=""
-        }
-        if ($1=="") $1="1970-01-01T00:00:00Z"
-        if ($2=="") $2="retry_event"
-        if ($6=="") $6="blocked"
-        if ($7=="") $7="dependency_blocked"
-        if ($8=="" || $8 !~ /^[0-9]+$/) $8="0"
-        if ($9=="" || $9 !~ /^[0-9]+$/ || $9 < 1) $9="3"
-        if ($10=="") $10="P2"
-        if ($11=="") $11="planner"
-        print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12
-      }
-    ' "$history_file" > "$tmp_file"
-    mv "$tmp_file" "$history_file"
-  fi
-}
-
-append_retry_history_event() {
-  local project_root="$1"
-  local event_type="$2"
-  local id="$3"
-  local from_queue="$4"
-  local to_queue="$5"
-  local status="$6"
-  local error_class="$7"
-  local attempt_count="$8"
-  local retry_budget="$9"
-  local priority="${10}"
-  local actor="${11}"
-  local note="${12}"
-  local history_file
-  history_file="$(retry_history_file_path "$project_root")"
-  ensure_retry_history_file "$history_file"
-  printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-    "$(sanitize_field "$(timestamp_utc)")" \
-    "$(sanitize_field "$event_type")" \
-    "$(sanitize_field "$id")" \
-    "$(sanitize_field "$from_queue")" \
-    "$(sanitize_field "$to_queue")" \
-    "$(sanitize_field "$status")" \
-    "$(sanitize_field "$error_class")" \
-    "$(sanitize_field "$attempt_count")" \
-    "$(sanitize_field "$retry_budget")" \
-    "$(sanitize_field "$priority")" \
-    "$(sanitize_field "$actor")" \
-    "$(sanitize_field "$note")" >> "$history_file"
-}
-
-priority_label_for_row() {
-  local title="${1:-}"
-  local note="${2:-}"
-  local next_action="${3:-}"
-  local error_class="${4:-none}"
-  local attempt_count="${5:-0}"
-  local retry_budget="${6:-3}"
-  local merged lowered tag
-
-  merged="$title $note $next_action"
-  lowered="$(to_lower "$merged")"
-  for tag in p0 p1 p2 p3; do
-    if [[ "$lowered" == *"$tag"* ]]; then
-      case "$tag" in
-        p0) printf "P0" ;;
-        p1) printf "P1" ;;
-        p2) printf "P2" ;;
-        p3) printf "P3" ;;
-      esac
-      return 0
-    fi
-  done
-
-  if [[ ! "$attempt_count" =~ ^[0-9]+$ ]]; then
-    attempt_count="0"
-  fi
-  if [[ ! "$retry_budget" =~ ^[0-9]+$ || "$retry_budget" -lt 1 ]]; then
-    retry_budget="3"
-  fi
-
-  if [[ "$error_class" == "hard_fail" ]]; then
-    printf "P1"
-    return 0
-  fi
-  if [[ "$attempt_count" -ge "$retry_budget" ]]; then
-    printf "P1"
-    return 0
-  fi
-  if [[ "$error_class" == "dependency_blocked" || "$error_class" == "soft_fail" ]]; then
-    printf "P2"
-    return 0
-  fi
-  printf "P3"
-}
-
-refresh_weekly_retry_summary() {
-  local project_root="$1"
-  local weeks="${2:-1}"
-  local history_file blocked_file output_file
-
-  history_file="$(retry_history_file_path "$project_root")"
-  blocked_file="$(queue_file_path "$project_root" "blocked")"
-  output_file="$(weekly_retry_summary_file_path "$project_root" "$weeks")"
-  ensure_retry_history_file "$history_file"
-  ensure_queue_file "$blocked_file"
-
-  if ! command -v python3 >/dev/null 2>&1; then
-    return 0
-  fi
-
-  python3 - "$history_file" "$blocked_file" "$output_file" "$weeks" <<'PY'
-import csv
-import datetime as dt
-from pathlib import Path
-import sys
-
-history_path = Path(sys.argv[1])
-blocked_path = Path(sys.argv[2])
-output_path = Path(sys.argv[3])
-weeks = max(1, int(sys.argv[4]))
-window_days = weeks * 7
-now = dt.datetime.utcnow()
-window_start = now - dt.timedelta(days=window_days)
-
-def parse_ts(value: str):
-    if not value:
-        return None
-    try:
-        return dt.datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
-    except Exception:
-        return None
-
-events = []
-if history_path.exists():
-    with history_path.open("r", encoding="utf-8") as f:
-        reader = csv.DictReader(f, delimiter="\t")
-        for row in reader:
-            ts = parse_ts((row.get("ts_utc") or "").strip())
-            if ts is None or ts < window_start:
-                continue
-            events.append((ts, row))
-
-open_exhausted = []
-if blocked_path.exists():
-    with blocked_path.open("r", encoding="utf-8") as f:
-        reader = csv.DictReader(f, delimiter="\t")
-        for row in reader:
-            try:
-                attempts = int((row.get("attempt_count") or "0").strip())
-                budget = int((row.get("retry_budget") or "3").strip())
-            except Exception:
-                attempts, budget = 0, 3
-            if budget < 1:
-                budget = 3
-            if attempts >= budget:
-                open_exhausted.append(row)
-
-events_total = len(events)
-affected_ids = sorted({(row.get("id") or "").strip() for _, row in events if (row.get("id") or "").strip()})
-
-by_queue = {}
-by_priority = {}
-for _, row in events:
-    q = (row.get("from_queue") or "unknown").strip() or "unknown"
-    p = (row.get("priority") or "P2").strip() or "P2"
-    by_queue[q] = by_queue.get(q, 0) + 1
-    by_priority[p] = by_priority.get(p, 0) + 1
-
-def row_updated_at(row):
-    return parse_ts((row.get("updated_at") or "").strip()) or dt.datetime(1970, 1, 1)
-
-open_exhausted.sort(key=row_updated_at)
-
-output_path.parent.mkdir(parents=True, exist_ok=True)
-with output_path.open("w", encoding="utf-8") as out:
-    out.write("# Retry Budget Weekly Summary\n\n")
-    out.write(f"- window_days: {window_days}\n")
-    out.write(f"- window_start_utc: {window_start.strftime('%Y-%m-%dT%H:%M:%SZ')}\n")
-    out.write(f"- generated_at_utc: {now.strftime('%Y-%m-%dT%H:%M:%SZ')}\n")
-    out.write(f"- retry_budget_exhausted_events: {events_total}\n")
-    out.write(f"- affected_ticket_count: {len(affected_ids)}\n")
-    out.write(f"- open_blocked_exhausted_count: {len(open_exhausted)}\n\n")
-
-    out.write("## Source Queue Distribution\n\n")
-    out.write("| queue | events |\n")
-    out.write("|---|---:|\n")
-    if by_queue:
-        for q in sorted(by_queue):
-            out.write(f"| {q} | {by_queue[q]} |\n")
-    else:
-        out.write("| (none) | 0 |\n")
-    out.write("\n")
-
-    out.write("## Priority Distribution\n\n")
-    out.write("| priority | events |\n")
-    out.write("|---|---:|\n")
-    if by_priority:
-        for p in sorted(by_priority):
-            out.write(f"| {p} | {by_priority[p]} |\n")
-    else:
-        out.write("| (none) | 0 |\n")
-    out.write("\n")
-
-    out.write("## Oldest Open Exhausted Blocked Tickets\n\n")
-    out.write("| id | updated_at | attempt_count | retry_budget | next_action |\n")
-    out.write("|---|---|---:|---:|---|\n")
-    if open_exhausted:
-        for row in open_exhausted[:20]:
-            out.write(
-                f"| {(row.get('id') or '').strip()} | {(row.get('updated_at') or '').strip()} | "
-                f"{(row.get('attempt_count') or '').strip()} | {(row.get('retry_budget') or '').strip()} | "
-                f"{(row.get('next_action') or '').strip()} |\n"
-            )
-    else:
-        out.write("| (none) | - | 0 | 0 | - |\n")
-PY
-}
-
-ensure_standard_queues() {
-  local project_root="$1"
-  local queue
-  for queue in "${STANDARD_QUEUES[@]}"; do
-    ensure_queue_file "$(queue_file_path "$project_root" "$queue")"
-  done
-}
-
-ensure_template_file() {
-  local path="$1"
-  local content="$2"
-  mkdir -p "$(dirname "$path")"
-  if [[ ! -f "$path" ]]; then
-    printf "%s\n" "$content" > "$path"
-  fi
-}
-
-ensure_default_templates() {
-  local project_root="$1"
-  local templates_root="$project_root/.sigee/templates"
-
-  ensure_template_file "$templates_root/ops-rules.md" "# 운영규약
-
-## 목적
-- 프로젝트 협업 규칙과 상태 전이 규칙을 명시한다.
-
-## 티켓 관리
-- 필수 필드: \`Status\`, \`Next Action\`, \`Lease\`, \`Evidence Links\`
-- 라이프사이클 단계: \`planned -> ready -> running -> evidence_collected -> verified -> done\`
-- 실패 분류: \`none|soft_fail|hard_fail|dependency_blocked\`
-- 기본 전이: \`planner-inbox -> scientist-todo|developer-todo -> planner-review -> done\`
-- 예외 전이: \`* -> blocked\`, \`blocked -> planner-inbox|scientist-todo|developer-todo\`
-- 큐 운영(루프 모드): \`planner-inbox -> scientist/developer -> planner-review -> done|requeue\`
-- \`done\` 전이는 planner 리뷰에서만 허용
-
-## 글로벌 정책
-- 삭제 금지: 문서는 삭제하지 않고 \`DEPRECATED\` 표기 후 아카이브한다.
-- \`done\` 전이는 planner 전용이다.
-
-## 운영 로그
-- 변경 사유
-- 결정 사항
-- 후속 액션"
-
-  ensure_template_file "$templates_root/agent-ticket.md" "# 에이전트 티켓
-
-## 메타
-- Ticket ID:
-- Summary:
-- Queue:
-- Status:
-- Next Action:
-- Lease:
-
-## 요구사항
-- ReqIDs:
-- Acceptance Criteria:
-
-## 작업 기록
-- Progress Log:
-- Evidence Links:
-
-## 핸드오프
-- Decision Required:
-- Blocker:
-- Next Step:"
-
-  ensure_template_file "$templates_root/handoff-note.md" "# 핸드오프 노트
-
-## 컨텍스트
-- 작업 요약:
-- 현재 상태:
-
-## 완료/미완료
-- Completed:
-- Remaining:
-
-## 리스크
-- Risk:
-- Mitigation:
-
-## 다음 액션
-- Next Action:
-- Evidence Links:"
-
-  ensure_template_file "$templates_root/weekly-board.md" "# 업무 보드(주간)
-
-## planner-inbox
--
-
-## scientist-todo
--
-
-## developer-todo
--
-
-## planner-review
--
-
-## done
--
-
-## blocked
--
-
-## 주간 보고
-- Highlights:
-- Risks:
-- Next Week:"
-
-  ensure_template_file "$templates_root/queue-ticket.md" "# Queue Ticket Template
-
-- ID:
-- Queue:
-- Status:
-- Worker:
-- Title:
-- Source:
-- Updated At:
-- Note:
-- Next Action:
-- Lease:
-- Evidence Links:
-- Phase:
-- Error Class:
-- Attempt Count:
-- Retry Budget:
-
-## Evidence
-
-- Links:
-- Verification:
-
-## Next Routing
-
-- Next Queue:
-- Reason:"
-}
-
-bootstrap_runtime() {
-  local project_root="$1"
-  mkdir -p \
-    "$project_root/$RUNTIME_ROOT/plans" \
-    "$project_root/$RUNTIME_ROOT/dag/scenarios" \
-    "$project_root/$RUNTIME_ROOT/dag/pipelines" \
-    "$project_root/$RUNTIME_ROOT/dag/state" \
-    "$project_root/$RUNTIME_ROOT/evidence" \
-    "$project_root/$RUNTIME_ROOT/reports" \
-    "$project_root/$RUNTIME_ROOT/orchestration/archive" \
-    "$project_root/$RUNTIME_ROOT/orchestration/history" \
-    "$project_root/$RUNTIME_ROOT/locks"
-
-  ensure_standard_queues "$project_root"
-  ensure_archive_file "$(archive_file_path "$project_root")"
-  ensure_retry_history_file "$(retry_history_file_path "$project_root")"
-  ensure_default_templates "$project_root"
-
-  if [[ -x "$GITIGNORE_GUARD_SCRIPT" ]]; then
-    "$GITIGNORE_GUARD_SCRIPT" "$project_root" >/dev/null
-  fi
-}
-
-append_row() {
-  local queue_file="$1"
-  local id="$2"
-  local status="$3"
-  local worker="$4"
-  local title="$5"
-  local source="$6"
-  local updated_at="$7"
-  local note="$8"
-  local next_action="$9"
-  local lease="${10}"
-  local evidence_links="${11}"
-  local phase="${12:-ready}"
-  local error_class="${13:-none}"
-  local attempt_count="${14:-0}"
-  local retry_budget="${15:-$(default_retry_budget)}"
-  printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-    "$(sanitize_field "$id")" \
-    "$(sanitize_field "$status")" \
-    "$(sanitize_field "$worker")" \
-    "$(sanitize_field "$title")" \
-    "$(sanitize_field "$source")" \
-    "$(sanitize_field "$updated_at")" \
-    "$(sanitize_field "$note")" \
-    "$(sanitize_field "$next_action")" \
-    "$(sanitize_field "$lease")" \
-    "$(sanitize_field "$evidence_links")" \
-    "$(sanitize_field "$phase")" \
-    "$(sanitize_field "$error_class")" \
-    "$(sanitize_field "$attempt_count")" \
-    "$(sanitize_field "$retry_budget")" >> "$queue_file"
-}
-
-append_archive_row() {
-  local archive_file="$1"
-  local id="$2"
-  local status="$3"
-  local worker="$4"
-  local title="$5"
-  local source="$6"
-  local updated_at="$7"
-  local note="$8"
-  local next_action="$9"
-  local lease="${10}"
-  local evidence_links="${11}"
-  local phase="${12:-done}"
-  local error_class="${13:-none}"
-  local attempt_count="${14:-0}"
-  local retry_budget="${15:-$(default_retry_budget)}"
-  local archived_at="${16}"
-  local archived_by="${17}"
-  printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
-    "$(sanitize_field "$id")" \
-    "$(sanitize_field "$status")" \
-    "$(sanitize_field "$worker")" \
-    "$(sanitize_field "$title")" \
-    "$(sanitize_field "$source")" \
-    "$(sanitize_field "$updated_at")" \
-    "$(sanitize_field "$note")" \
-    "$(sanitize_field "$next_action")" \
-    "$(sanitize_field "$lease")" \
-    "$(sanitize_field "$evidence_links")" \
-    "$(sanitize_field "$phase")" \
-    "$(sanitize_field "$error_class")" \
-    "$(sanitize_field "$attempt_count")" \
-    "$(sanitize_field "$retry_budget")" \
-    "$(sanitize_field "$archived_at")" \
-    "$(sanitize_field "$archived_by")" >> "$archive_file"
-}
+# queue state + queue I/O functions are sourced from dedicated modules:
+# - orchestration_queue_state.sh
+# - orchestration_queue_store.sh
 
 cmd_init() {
   local project_root=""

@@ -1,6 +1,14 @@
 ## Non-technical summary
 - We design an AI training and inference pipeline with leakage controls and rollback readiness.
 
+## Verification confidence
+- Confidence: High for workflow design, Medium for model-specific threshold tuning.
+- Basis: operational debt + leakage references, explicit offline/online fail criteria.
+
+## Remaining risks, unknowns, and open decisions
+- Risk: concept drift in seasonal traffic segments.
+- Unknown: robustness for long-tail categories.
+
 ## Problem formulation
 - Objective: improve F1 while keeping inference p95 latency within service SLO.
 - Constraints: temporal split, weekly retraining budget, strict artifact versioning.
@@ -51,10 +59,6 @@ Stability/Convergence Notes:
 - Offline: F1/AUC by slice with minimum thresholds.
 - Online readiness: latency p95, error rate, rollback trigger tests.
 - Fail criteria: metric regression beyond guardrail or SLO breach.
-
-## Risks, unknowns, and open decisions
-- Risk: concept drift in seasonal traffic segments.
-- Unknown: robustness for long-tail categories.
 
 ## training/inference pipeline blueprint (data, train, eval, serve, monitor)
 - Data: versioned ingest + leakage checks.

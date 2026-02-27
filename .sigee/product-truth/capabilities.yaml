@@ -1,0 +1,67 @@
+version: 1
+revision: 4
+updated_at: "2026-02-26T23:59:00Z"
+owner: "tech-planner"
+capabilities:
+  - id: "CAP-ORCH-STATE"
+    outcome_id: "OUT-ORCH-001"
+    stability_layer_default: "core"
+    name: "State machine and transition safety"
+    description: "Queue lifecycle is explicit, validated, and resistant to invalid state transitions."
+    status: "active"
+    in_scope:
+      - "Lifecycle model with enforced transition rules"
+      - "Planner-only done authority with strict gates"
+    out_of_scope:
+      - "Manual queue file editing as an operational path"
+    notes: "Targets orchestration state and transition integrity."
+  - id: "CAP-ORCH-ERROR"
+    outcome_id: "OUT-ORCH-001"
+    stability_layer_default: "core"
+    name: "Error taxonomy and retry governance"
+    description: "Runtime failures are classified, retried within budget, and surfaced with confidence metadata."
+    status: "active"
+    in_scope:
+      - "soft_fail, hard_fail, dependency_blocked taxonomy"
+      - "attempt tracking and retry budget controls"
+    out_of_scope:
+      - "Automatic retry of irreversible destructive operations"
+    notes: "Targets deterministic failure handling."
+  - id: "CAP-ORCH-OBS"
+    outcome_id: "OUT-ORCH-001"
+    stability_layer_default: "system"
+    name: "Execution observability and trace graph"
+    description: "Operators can inspect progress, blockers, evidence links, and DAG status quickly."
+    status: "active"
+    in_scope:
+      - "Run summary JSON and JSONL execution traces"
+      - "Mermaid DAG export for visual inspection"
+    out_of_scope:
+      - "GUI dashboard implementation in this phase"
+    notes: "Targets inspection-first runtime visibility."
+  - id: "CAP-ORCH-SCALE"
+    outcome_id: "OUT-ORCH-001"
+    stability_layer_default: "experimental"
+    name: "Scale validation harness"
+    description: "Synthetic DAG workloads validate behavior at larger graph sizes before production usage."
+    status: "active"
+    in_scope:
+      - "Synthetic DAG generators for 50/200/500 node classes"
+      - "Performance budget checks and regression detection"
+    out_of_scope:
+      - "Distributed multi-host execution in this phase"
+    notes: "Targets practical scale confidence."
+  - id: "CAP-ORCH-PROFILE"
+    outcome_id: "OUT-ORCH-001"
+    stability_layer_default: "system"
+    name: "Developer profile specialization and residue cleanup"
+    description: "Developer execution adapts by domain profile and aggressively removes residue code under strict behavior-lock verification."
+    status: "active"
+    in_scope:
+      - "Profile selection via queue metadata or task context"
+      - "Refactoring-specialist residue detection and cleanup contract"
+      - "Behavior-lock and regression evidence before cleanup completion"
+    out_of_scope:
+      - "Unverified destructive refactors"
+      - "Automated profile inference from external services"
+    notes: "Targets sustained codebase hygiene under frequent requirement changes."

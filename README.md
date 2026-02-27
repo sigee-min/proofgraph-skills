@@ -1,171 +1,112 @@
 # ProofGraph Skills
 
-A skill-only workflow pack for Codex that standardizes **planning -> implementation -> validation** without relying on AGENTS.md or multi-agent runtime features.
+Codex에서 제품 개발을 끝까지 밀어붙이기 위한 사용자 중심 스킬 팩입니다.
+핵심은 하나입니다: 사용자는 기능/목표만 말하고, 스킬은 계획-구현-검증 루프를 내부에서 처리합니다.
 
-## Concept
+## 사용자에게 보이는 가치
 
-This repository is built around four principles:
+- 제품 중심 대화: 내부 큐/런타임 용어 없이 결과와 다음 액션만 확인
+- 검증 기반 완료: 테스트/근거 없는 “완료”를 차단
+- 연속 실행 흐름: 매 응답 끝에 다음 실행 프롬프트 1개 제공
+- 복잡한 문제 대응: 과학/수학/AI 이슈도 개발 가능한 형태로 변환
 
-1. **Skill-only operation**
-   - The workflow is enforced by skill contracts and helper scripts.
-   - Users can drive the system through natural-language requests.
+## 이 팩이 맞는 경우
 
-2. **Planner-centric orchestration**
-   - `tech-planner` owns loop control and final completion authority.
-   - `tech-developer` and `tech-scientist` hand work back to planner review.
+- AI와 함께 혼자 큰 프로젝트를 운영하는 경우
+- 요구사항이 자주 바뀌어도 방향성과 품질을 같이 지키고 싶은 경우
+- “빨리”보다 “재현 가능하게 완성”을 선호하는 경우
 
-3. **Strict test-first execution**
-   - Runtime flow is strict by default.
-   - Verification evidence is mandatory for completion.
+## 사용 방식 (블랙박스 UX)
 
-4. **Governance vs runtime separation**
-   - Governance and long-lived intent live in `.sigee/`.
-   - Volatile execution artifacts live in `${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`.
+1. 만들고 싶은 기능/목표를 자연어로 설명
+2. 제시된 `다음 실행 프롬프트`를 복붙해 이어서 실행
+3. 목표 달성까지 반복
 
-## Included Skills
+기본적으로 사용자가 큐, DAG, 런타임 스크립트를 직접 다룰 필요는 없습니다.
+
+## 스킬 구성
 
 - `tech-planner`
-  - Requirement interview, plan definition, scenario/DAG planning, queue orchestration, done-gate review.
+  - 요구사항을 실행 가능한 계획으로 분해하고 우선순위/리스크를 정리
 - `tech-developer`
-  - Plan-driven implementation, strict validation, wave-based execution in queue mode, evidence-first handoff.
+  - 승인된 계획을 strict 모드로 구현하고 검증 근거까지 제출
 - `tech-scientist`
-  - Paper-backed science/engineering/math/AI-ML method translation into project-ready pseudocode and validation plans.
+  - 시뮬레이션/수학/AI 문제를 논문 근거 + 의사코드 + 검증계획으로 변환
 
-## Operating Model
+## 지원 언어
 
-### 1) Product Truth SSoT
+### 1) 사용자 대화 언어
 
-Planning truth is anchored in `.sigee/product-truth/`:
+- 한국어: 권장
+- English: fully usable
+- 기타 언어: 사용 가능하지만 템플릿/회귀 규칙은 한/영 기준으로 최적화되어 있음
 
-- `outcomes.yaml`
-- `capabilities.yaml`
-- `traceability.yaml`
+### 2) 제품/코드 스택 언어
 
-This maps outcome -> capability -> scenario -> DAG node contract.
+- 특정 언어에 고정되지 않은 스택-중립 구조
+- 일반적으로 다음 스택에서 사용 가능:
+  - TypeScript/JavaScript
+  - Python
+  - Go
+  - Java/Kotlin
+  - Rust
+  - C/C++
+  - Swift
+- 전제 조건:
+  - 저장소에 실행 가능한 빌드/테스트/검증 명령이 있어야 함
 
-### 2) Orchestration Queues
+### 3) 응답 언어 규칙
 
-Queue root:
+- 기본적으로 사용자의 현재 대화 언어를 따라감
+- 요청 시 다른 언어로 고정 가능
 
-- `<runtime-root>/orchestration/queues/`
+## 품질 계약 (요약)
 
-Standard queues:
+- strict 실행이 기본값
+- 완료 판정은 검증 근거가 있어야 통과
+- 사용자 응답은 항상 다음 순서 유지:
+  - 제품 변화/영향
+  - 검증 신뢰
+  - 잔여 리스크
+- 마지막에는 `다음 실행 프롬프트` 코드블록 1개만 제공
 
-- `planner-inbox`
-- `scientist-todo`
-- `developer-todo`
-- `planner-review`
-- `blocked`
-- `done` (transient completion lane)
-
-### 3) Done and Archive Behavior
-
-Completion is planner-gated and archive-backed:
-
-- Only `planner-review -> done` is allowed.
-- `done` transition requires:
-  - planner actor authority,
-  - non-empty evidence links,
-  - passing verification gate.
-- Completed rows are automatically archived to:
-  - `<runtime-root>/orchestration/archive/done-YYYY-MM.tsv`
-- Archive maintenance is internal via `orchestration_archive.sh` (`status`, `flush-done`, `clear`).
-
-### 4) Mandatory DAG Test Contract
-
-Per scenario, the following counts are enforced:
-
-- `unit_normal = 2`
-- `unit_boundary = 2`
-- `unit_failure = 2`
-- `boundary_smoke = 5`
-
-## Runtime and Paths
-
-Default runtime root:
-
-- `${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`
-
-Typical runtime outputs:
-
-- plans: `<runtime-root>/plans/`
-- scenarios: `<runtime-root>/dag/scenarios/`
-- pipelines: `<runtime-root>/dag/pipelines/`
-- state: `<runtime-root>/dag/state/`
-- evidence: `<runtime-root>/evidence/`
-- queues: `<runtime-root>/orchestration/queues/`
-- done archive: `<runtime-root>/orchestration/archive/`
-
-## Install
-
-Default installation target:
-
-- `${CODEX_HOME}/skills`
-
-Recommended UX is chat-first (let Codex install internally), for example:
+## 설치
 
 ```md
 $skill-installer
 Install tech-planner, tech-developer, and tech-scientist from this repository into my Codex skills path.
 ```
 
-Maintainer scripts are available in `scripts/` for local deployment automation.
+## 빠른 시작
 
-## Minimal Usage (Chat-First)
-
-### Planning
+### 기획 시작
 
 ```md
 $tech-planner
-runtime-root=${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}
 
-Create an execution-ready plan for improving our checkout flow.
-Include acceptance criteria, validation gates, and risks.
+신규 요구를 제품 기능으로 분해하고 우선순위를 정해줘.
+바로 실행할 다음 작업 1건만 제시해줘.
 ```
 
-### Implementation
+### 구현 실행
 
 ```md
 $tech-developer
-runtime-root=${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}
 
-Execute the approved plan end-to-end in strict mode,
-then report results in content-first language with evidence summary.
+승인된 계획을 strict 모드로 끝까지 실행해줘.
+사용자 영향, 검증 신뢰, 잔여 리스크 순서로 보고해줘.
 ```
 
-### Scientific / AI-ML Design
+### 과학/AI 검증
 
 ```md
 $tech-scientist
-runtime-root=${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}
 
-For this simulation + AI pipeline problem, provide literature-backed pseudocode,
-validation design, and handoff prompts for planner and developer.
+복잡한 시뮬레이션/수학/AI 문제를 논문 근거 기반으로
+의사코드와 검증 계획까지 만들어줘.
 ```
 
-## Git Hygiene
+## 저장소 운영 원칙 (짧게)
 
-This repository uses deny-by-default policy for `.sigee`.
-
-Tracked by default:
-
-- governance and intent assets under `.sigee/policies`, `.sigee/product-truth`, `.sigee/scenarios`, `.sigee/dag/schema`, `.sigee/dag/pipelines`, `.sigee/migrations`.
-
-Ignored by default:
-
-- runtime and volatile artifacts under `.sigee/.runtime/**` (including queues and archives), `.sigee/evidence/**`, `.sigee/reports/**`, `.sigee/templates/**`.
-
-## Repository Layout
-
-- `skills/tech-planner/`
-- `skills/tech-developer/`
-- `skills/tech-scientist/`
-- `.sigee/` (governance and product-truth baseline)
-- `scripts/` (deployment/install helpers)
-- `CHANGELOG.md`
-
-## Notes
-
-- This pack is optimized for natural-language operation.
-- Users should not need to run queue/archive scripts manually.
-- When users request cleanup (for example archive purge), the skills should execute it internally.
+- `.sigee/`: 정책/제품 진실(SSoT) 같은 장기 지식
+- `.sigee/.runtime/`: 실행 중 생성되는 런타임 산출물(기본 git ignore)

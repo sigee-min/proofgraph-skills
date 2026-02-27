@@ -86,6 +86,9 @@
 4. scientist/developer는 작업 완료 후 반드시 `planner-review`로 이동한다.
 5. planner는 리뷰 후 `done` 또는 재작업 큐(`scientist-todo`/`developer-todo`)로 재배치한다.
    - 리뷰 승인 직전에는 `phase=verified` 또는 done gate 조건을 만족해야 한다.
+6. 단일 진입 규칙:
+   - 사용자 직접 요청으로 scientist/developer가 독립 실행을 시작하지 않는다.
+   - 실행은 planner 라우팅 컨텍스트(큐/계획 기반)에서만 시작한다.
 
 ## 정지 조건 (필수)
 
@@ -104,6 +107,9 @@
 ## 내부 실행 규약
 
 - 큐 초기화, 라우팅, 상태 전이는 `orchestration_queue.sh`를 통해 스킬 내부에서 자동 실행한다.
+- developer 실행 진입은 `planner_entry_guard.sh`로 강제한다.
+  - planner 라우팅 컨텍스트가 없으면 실행을 차단하고 planner로 반환한다.
+  - 마이그레이션/디버그 시에만 `SIGEE_ALLOW_DIRECT_ENTRY=1`로 한시적 우회할 수 있다.
 - 루프 종료 판정은 `orchestration_queue.sh loop-status --user-facing`를 기본 사용자 보고 기준으로 사용한다.
 - `loop-status`/`next-prompt`는 호출 시 pending plan backlog를 먼저 동기화해 queue와 plan 상태를 맞춘다.
 - loop mode 기본값으로 planner는 `orchestration_autoloop.sh`를 내부 실행한다.
@@ -113,12 +119,8 @@
 - `planner-review -> done` 승인 직후 queue helper는 `loop-status --user-facing`를 평가한다.
   - `CONTINUE`: 다음 실행 프롬프트 추천을 출력
   - `STOP_DONE` / `STOP_USER_CONFIRMATION`: 종료 사유와 함께 다음 사이클 시작/의사결정 해소 프롬프트를 출력
+- 사용자 보고 렌더링은 `.sigee/policies/response-rendering-contract.md`를 단일 기준으로 따른다.
 - 사용자에게는 제품 영향 요약과 다음 실행 프롬프트만 노출하고, 스크립트 실행을 요구하지 않는다.
-- 기본 사용자 보고에서는 큐/상태머신 용어를 숨긴다.
-  - 숨김 대상: queue 이름, phase, lease, done-gate, `LOOP_STATUS`, `NEXT_PROMPT_*`, `CLAIM_*`
-  - 숨김 대상에 runtime path/config 표현도 포함한다 (예: `runtime-root=...`)
-  - 예외: 사용자가 운영 세부(traceability/큐 상태)를 명시적으로 요청한 경우
-- 다음 실행 프롬프트는 작업 의도만 포함하며, shell 명령/스크립트 경로/CLI 옵션을 노출하지 않는다.
 - 큐/런타임 폴더와 `.sigee/templates/*` 로컬 템플릿은 최초 큐 동작 시 자동 생성한다.
 - queue helper는 lease를 자동 관리한다.
   - `claim`: `held:<worker>:<utc>`
@@ -140,6 +142,8 @@
 - `done` 전이는 다음 중 하나의 PASS 게이트가 없으면 거부한다.
   - PASS-only `verification-results.tsv`
   - PASS `dag/state/last-run.json` + evidence dir 존재
+- `done` 전이 시 product-truth 검증 외에 goal hierarchy 검증(`goal_governance_validate --strict`)을 함께 통과해야 한다.
+- product-truth 또는 source scenario 변경이 포함된 작업은 change impact gate 결과를 검증 근거로 첨부해야 한다.
 - 모든 handoff는 근거 링크/검증 로그를 포함한다.
 - DAG 테스트 계약(`unit_normal=2`, `unit_boundary=2`, `unit_failure=2`, `boundary_smoke=5`) 미충족 시 `done` 금지.
 - `done` 전이는 lifecycle phase 규칙 및 retry budget 규칙을 동시에 만족해야 한다.

@@ -8,8 +8,10 @@ description: Evidence-backed scientific and engineering translation for complex 
 ## Operating Mode
 - Operate in skill-only mode. Do not depend on `AGENTS.md`, multi-agent roles, or role-specific runtime config.
 - Treat `.sigee` as governance source (`policy`, `template`, `runtime contract`), and treat runtime execution paths as configurable via `runtime-root=${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`.
+- Apply `.sigee/policies/response-rendering-contract.md` for final user-facing response rendering.
 - Treat `.sigee/product-truth/` as immutable intent input; propose updates through planner review instead of direct intent rewrites.
 - Prioritize primary sources (papers, RFCs, official docs, standards).
+- Enforce planner-first entry: without planner-routed context, do not start independent execution; return control to `tech-planner`.
 - Separate clearly:
   - research feasibility (theory-level)
   - project applicability (repo/system constraints)
@@ -62,18 +64,12 @@ Use this skill when user requests include one or more of the following:
 - Queue helper script is internal-only: `../tech-planner/scripts/orchestration_queue.sh` (`loop-status --user-facing`, `next-prompt --user-facing`)
 - Never transition to `done` directly; planner review is mandatory.
 - Queue handoff 이후 종료 여부는 내부 규칙으로 판정하며, 사용자에게는 제품 영향 중심 요약만 제공한다.
+- Direct scientist execution without planner-routed context is out-of-contract.
 
 ## User Communication Policy
-- Treat orchestration internals as black box for user-facing science reports.
-  - do not expose queue names, gate labels, or helper key-value outputs unless explicitly requested
-  - do not expose runtime path/config lines (for example `runtime-root=...`) in default user-facing prompts
-- Explain scientific output in product-application language first:
-  - what becomes possible in the product
-  - what risk was reduced
-  - what validation confidence was achieved
-- Keep traceability details (IDs, queue routing, raw evidence file paths) optional and append-only when requested.
-- Never expose internal artifact names in default user mode:
-  - queue names, ticket IDs, plan IDs, backlog file names, script file names
+- Follow `.sigee/policies/response-rendering-contract.md` as the single response rendering source.
+- Keep science reports product-application first, evidence-labeled, and risk-explicit.
+- Keep traceability appendix optional and hidden unless explicitly requested.
 
 ## Progress Tracking (Required)
 - For non-trivial scientific analysis (2+ meaningful phases), call `update_plan` before deep research starts.
@@ -93,19 +89,20 @@ Use this skill when user requests include one or more of the following:
 
 ## Output Contract (Mandatory Order)
 Return sections in this order:
-1. Non-technical summary (what problem, why this approach, expected impact)
-2. Problem formulation (formalized objective, constraints, assumptions)
-3. Evidence matrix (source link, year, contribution, assumptions, limits, applicability)
-4. Recommended approach and alternatives (with trade-offs)
-5. Project-ready pseudocode (parameterized + complexity + stability comments)
-6. Integration plan (module/file boundaries, test hooks, performance budget; runtime path details are appendix-only when requested)
-7. Validation and benchmark plan (metrics, baseline, fail criteria)
-8. Risks, unknowns, and open decisions
-9. `다음 실행 프롬프트` markdown block - always
+1. Behavior and user impact (`Non-technical summary`)
+2. Verification confidence (evidence sufficiency + confidence labels)
+3. Remaining risks, unknowns, and open decisions
+4. Problem formulation (formalized objective, constraints, assumptions)
+5. Evidence matrix (source link, year, contribution, assumptions, limits, applicability)
+6. Recommended approach and alternatives (with trade-offs)
+7. Project-ready pseudocode (parameterized + complexity + stability comments)
+8. Integration plan (module/file boundaries, test hooks, performance budget; runtime path details are appendix-only when requested)
+9. Validation and benchmark plan (metrics, baseline, fail criteria)
+10. For AI/ML tasks: training/inference pipeline blueprint (data, train, eval, serve, monitor)
+11. `다음 실행 프롬프트` markdown block at the end
    - prompt must be natural-language intent only (no command/script exposure)
    - if the cycle is in termination or decision-required state, include next-cycle start or decision-resolution intent in product language
    - in default user mode, report termination using product-impact language, not queue-state language
-10. For AI/ML tasks: training/inference pipeline blueprint (data, train, eval, serve, monitor)
 
 ## AI/ML Pipeline Rules
 - Define task type clearly (`classification`, `regression`, `generation`, `control`, `forecasting`).
@@ -159,6 +156,7 @@ Return sections in this order:
 - Handoff prompt templates: `references/handoff-prompts.md`
 - Smoke samples: `references/samples/sample-response-simulation.md`, `references/samples/sample-response-aiml.md`
 - Orchestration policy: `.sigee/policies/orchestration-loop.md`
+- Shared response contract: `.sigee/policies/response-rendering-contract.md`
 
 ## Scripts
 - Citation lint: `scripts/citation_lint.sh`

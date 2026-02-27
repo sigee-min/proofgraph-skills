@@ -1,0 +1,17 @@
+version: 1
+revision: 4
+updated_at: "2026-02-26T23:59:00Z"
+owner: "tech-planner"
+objectives:
+  - id: "OBJ-ORCH-GOV-001"
+    pillar_id: "PIL-ORCH-RELIABILITY"
+    title: "Guarantee execution correctness under strict evidence gates"
+    statement: "Planner-centric loops and DAG execution must reject unverified completion."
+    status: "active"
+    notes: ""
+  - id: "OBJ-ORCH-GOV-002"
+    pillar_id: "PIL-STRATEGIC-CONSISTENCY"
+    title: "Preserve product direction under frequent change"
+    statement: "Changes must be checked for hierarchy consistency, impact radius, and protected-layer violations."
+    status: "active"
+    notes: ""

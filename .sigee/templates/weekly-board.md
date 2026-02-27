@@ -1,21 +1,21 @@
 # 업무 보드(주간)
 
-## Backlog
+## planner-inbox
 -
 
-## Ready
+## scientist-todo
 -
 
-## InProgress
+## developer-todo
 -
 
-## Review
+## planner-review
 -
 
-## Done
+## done
 -
 
-## Blocked
+## blocked
 -
 
 ## 주간 보고

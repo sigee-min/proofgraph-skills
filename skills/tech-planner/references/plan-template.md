@@ -64,6 +64,11 @@ done_definition:
 - Functional checks:
 - Non-functional checks:
 - Regression checks:
+- DAG mandatory checks:
+  - unit_normal_tests: 2 per scenario
+  - unit_boundary_tests: 2 per scenario
+  - unit_failure_tests: 2 per scenario
+  - boundary_smoke_tests: 5 per scenario
 
 ## Rollout and Rollback
 - Rollout:

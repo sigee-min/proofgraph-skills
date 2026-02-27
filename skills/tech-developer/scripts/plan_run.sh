@@ -7,10 +7,10 @@ Usage:
   plan_run.sh <plan-file> [--mode strict] [--resume] [--write-report]
 
 Examples:
-  SIGEE_RUNTIME_ROOT=.codex plan_run.sh .codex/plans/auth-refactor.md
-  SIGEE_RUNTIME_ROOT=.runtime plan_run.sh .runtime/plans/auth-refactor.md --mode strict
-  SIGEE_RUNTIME_ROOT=.runtime plan_run.sh .runtime/plans/auth-refactor.md --resume
-  SIGEE_RUNTIME_ROOT=.runtime plan_run.sh .runtime/plans/auth-refactor.md --write-report
+  SIGEE_RUNTIME_ROOT=.sigee/.runtime plan_run.sh .sigee/.runtime/plans/auth-refactor.md
+  SIGEE_RUNTIME_ROOT=.sigee/.runtime plan_run.sh .sigee/.runtime/plans/auth-refactor.md --mode strict
+  SIGEE_RUNTIME_ROOT=.sigee/.runtime plan_run.sh .sigee/.runtime/plans/auth-refactor.md --resume
+  SIGEE_RUNTIME_ROOT=.sigee/.runtime plan_run.sh .sigee/.runtime/plans/auth-refactor.md --write-report
 USAGE
 }
 
@@ -24,12 +24,13 @@ shift
 MODE="strict"
 GENERATE_REPORT=0
 RESUME=0
-RUNTIME_ROOT="${SIGEE_RUNTIME_ROOT:-.codex}"
+RUNTIME_ROOT="${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GITIGNORE_GUARD_SCRIPT="$SCRIPT_DIR/../../tech-planner/scripts/sigee_gitignore_guard.sh"
+PLANNER_ENTRY_GUARD_SCRIPT="$SCRIPT_DIR/../../tech-planner/scripts/planner_entry_guard.sh"
 
-if [[ "$RUNTIME_ROOT" == */* ]]; then
-  echo "ERROR: SIGEE_RUNTIME_ROOT must be a single directory name (e.g. .codex or .runtime)" >&2
+if [[ -z "$RUNTIME_ROOT" || "$RUNTIME_ROOT" == "." || "$RUNTIME_ROOT" == ".." || "$RUNTIME_ROOT" == /* || "$RUNTIME_ROOT" == *".."* ]]; then
+  echo "ERROR: SIGEE_RUNTIME_ROOT must be a safe relative path (e.g. .sigee/.runtime)" >&2
   exit 1
 fi
 
@@ -107,6 +108,15 @@ if [[ ! -x "$GITIGNORE_GUARD_SCRIPT" ]]; then
   exit 1
 fi
 "$GITIGNORE_GUARD_SCRIPT" "$PROJECT_ROOT"
+
+if [[ ! -x "$PLANNER_ENTRY_GUARD_SCRIPT" ]]; then
+  echo "ERROR: Missing executable planner entry guard: $PLANNER_ENTRY_GUARD_SCRIPT" >&2
+  exit 1
+fi
+"$PLANNER_ENTRY_GUARD_SCRIPT" \
+  --project-root "$PROJECT_ROOT" \
+  --worker tech-developer \
+  --plan-file "$PLAN_FILE"
 
 mkdir -p "$EVIDENCE_DIR"
 if [[ "$RESUME" -eq 1 && -f "$RESULTS_FILE" ]]; then

@@ -1,4 +1,8 @@
-# Outline v1 Workload Discipline
+# Outline v1 Workload Discipline (Archived)
+
+> Archived legacy reference.
+> This file is retained for migration traceability only.
+> Current governance source: `.sigee/policies/orchestration-loop.md`.
 
 ## Ticket Flow
 
@@ -13,9 +17,8 @@
 
 ## Lease Protocol
 
-- Acquire lease before editing ticket state.
-- Renew for long tasks.
-- Release on handoff or completion.
+- Historical description only.
+- Current runtime automatically applies lease in queue helper (`claim` acquire, handoff release).
 
 ## Failure Handoff Schema
 
@@ -27,5 +30,6 @@
 
 ## Done Gate
 
-- Done exclusivity is enforced by reviewer flow only.
+- Done exclusivity (legacy): reviewer flow only.
+- Current runtime override: planner review flow only.
 - Any bypass is treated as process failure and must be reverted.

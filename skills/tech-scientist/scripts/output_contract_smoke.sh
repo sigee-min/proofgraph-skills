@@ -52,13 +52,14 @@ fi
 
 required_patterns=(
   "Non-technical summary"
+  "Verification confidence"
+  "Remaining risks, unknowns, and open decisions"
   "Problem formulation"
   "Evidence matrix"
   "Recommended approach and alternatives"
   "Project-ready pseudocode"
   "Integration plan"
   "Validation and benchmark plan"
-  "Risks, unknowns, and open decisions"
   "다음 실행 프롬프트"
 )
 
@@ -69,6 +70,24 @@ for pattern in "${required_patterns[@]}"; do
   fi
 done
 
+line_of_heading() {
+  local heading="$1"
+  rg -n "^## ${heading}$" "$TARGET_FILE" | head -n1 | cut -d: -f1
+}
+
+LINE_NONTECH="$(line_of_heading "Non-technical summary")"
+LINE_VERIFY="$(line_of_heading "Verification confidence")"
+LINE_RISK="$(line_of_heading "Remaining risks, unknowns, and open decisions")"
+
+if [[ -z "$LINE_NONTECH" || -z "$LINE_VERIFY" || -z "$LINE_RISK" ]]; then
+  echo "ERROR: missing mandatory top-level headings for rendering order." >&2
+  exit 1
+fi
+if [[ "$LINE_NONTECH" -ge "$LINE_VERIFY" || "$LINE_VERIFY" -ge "$LINE_RISK" ]]; then
+  echo "ERROR: rendering order must start with Non-technical summary -> Verification confidence -> Remaining risks." >&2
+  exit 1
+fi
+
 if [[ "$EXPECT_AI" -eq 1 ]]; then
   if ! rg -n "training/inference pipeline blueprint|data.*train.*eval.*serve.*monitor" "$TARGET_FILE" >/dev/null 2>&1; then
     echo "ERROR: AI mode requires training/inference pipeline blueprint section." >&2
@@ -76,8 +95,37 @@ if [[ "$EXPECT_AI" -eq 1 ]]; then
   fi
 fi
 
-if ! rg -n '^```md$|^```text$|^```$' "$TARGET_FILE" >/dev/null 2>&1; then
-  echo 'ERROR: missing fenced handoff block under 다음 실행 프롬프트.' >&2
+NEXT_PROMPT_SECTION_COUNT="$(rg -n '^## 다음 실행 프롬프트$' "$TARGET_FILE" | wc -l | tr -d ' ')"
+if [[ "$NEXT_PROMPT_SECTION_COUNT" -ne 1 ]]; then
+  echo "ERROR: response must include exactly one '다음 실행 프롬프트' section (got $NEXT_PROMPT_SECTION_COUNT)." >&2
+  exit 1
+fi
+
+NEXT_PROMPT_OPEN_COUNT="$(
+  awk '
+    BEGIN { in_section=0; count=0 }
+    /^## 다음 실행 프롬프트$/ { in_section=1; next }
+    /^## / && in_section { in_section=0 }
+    in_section && /^```md$/ { count++ }
+    END { print count }
+  ' "$TARGET_FILE"
+)"
+if [[ "$NEXT_PROMPT_OPEN_COUNT" -ne 1 ]]; then
+  echo 'ERROR: next prompt section must include exactly one opening markdown fence (```md).' >&2
+  exit 1
+fi
+
+NEXT_PROMPT_CLOSE_COUNT="$(
+  awk '
+    BEGIN { in_section=0; count=0 }
+    /^## 다음 실행 프롬프트$/ { in_section=1; next }
+    /^## / && in_section { in_section=0 }
+    in_section && /^```$/ { count++ }
+    END { print count }
+  ' "$TARGET_FILE"
+)"
+if [[ "$NEXT_PROMPT_CLOSE_COUNT" -ne 1 ]]; then
+  echo "ERROR: next prompt section must include exactly one closing markdown fence." >&2
   exit 1
 fi
 

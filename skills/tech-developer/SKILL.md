@@ -12,7 +12,9 @@ description: Plan-driven implementation and verification workflow for approved t
 - Avoid scope expansion. Escalate ambiguities instead of guessing.
 - Verify each completed task with concrete evidence.
 - Use `.sigee` governance docs as the source of policy/template truth with runtime root `${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`.
+- Apply `.sigee/policies/response-rendering-contract.md` for final user-facing response rendering.
 - Execute through an explicit developer profile. If no profile hint is present, default to `generalist`.
+- Enforce planner-first entry: without planner-routed context, do not execute implementation and route back to `tech-planner`.
 
 ## Developer Profiles (Mandatory)
 - Supported profiles:
@@ -40,6 +42,9 @@ description: Plan-driven implementation and verification workflow for approved t
    - locate and read the full plan file
    - enforce `<runtime-root>/plans/<plan-id>.md` path (`runtime-root=${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}`)
    - if no plan is provided, request one or call `$tech-planner`
+   - run planner entry guard before execution (`../tech-planner/scripts/planner_entry_guard.sh`)
+     - default policy blocks direct execution without planner-routed queue context
+     - controlled bypass is allowed only with `SIGEE_ALLOW_DIRECT_ENTRY=1`
    - if the plan depends on scientific/numerical method choice, require `$tech-scientist` evidence output before implementation
    - if `.sigee/dag/scenarios/*.scenario.yml` exists, prefer DAG mode (`dag_compile` -> `dag_build` + `dag_run`) before completion
    - inspect scenario scope via `../tech-planner/scripts/dag_scenario_crud.sh` (`list/show/summary`) from `.sigee/dag/scenarios` to keep execution context focused
@@ -110,7 +115,7 @@ description: Plan-driven implementation and verification workflow for approved t
   7. final report and traceability
 - If queue size is large, group items into waves of 3-5 tasks and update `update_plan` after each wave completion.
 - If failures occur, keep current wave as `in_progress`, report the blocker, and do not mark downstream waves as completed.
-- `plan_run.sh` and `codex_flow.sh` are plan-file execution primitives; queue claim/move automation must be handled by orchestration flow (for example `orchestration_queue.sh`) before/after these scripts.
+- `plan_run.sh` is the canonical plan-file execution primitive; queue claim/move automation must be handled by orchestration flow (for example `orchestration_queue.sh`) before/after execution.
 
 ## Execution Rules
 - Do not silently rewrite plan objectives.
@@ -136,33 +141,9 @@ description: Plan-driven implementation and verification workflow for approved t
   - 삭제/정리 변경은 반드시 rollback 경로를 설명한다.
 
 ## User Communication Policy
-- Explain implementation results in content-first language before traceability metadata.
-- Start with:
-  - what behavior changed
-  - what users will notice
-  - why the change is safe and how it was verified
-- Provide long-form explanations for important changes, not one-line summaries.
-- Treat orchestration internals as black box in default user responses.
-  - do not expose queue names, gate labels, lease/state fields, or helper key-value logs unless explicitly requested
-  - do not expose runtime path/config lines (for example `runtime-root=...`) in default user-facing prompts
-- Keep IDs/paths/internal execution traces in a separate traceability section at the end, and omit that appendix by default unless requested.
-- Never expose internal artifact names in default user mode:
-  - queue names, ticket IDs, plan IDs, backlog/report file names, script file names
-- Final response에서 `다음 실행 프롬프트`는 항상 제공한다.
-- 루프 종료 상태에서는 내부 상태 키를 노출하지 말고, 종료 영향과 다음 사이클/의사결정 해소용 프롬프트를 제품 언어로 제공한다.
-- `다음 실행 프롬프트` must be intent-only:
-  - do not include shell command lines
-  - do not include internal script paths
-  - do not include CLI flags/options
-  - do not include runtime path/config lines, queue names, or internal IDs
-
-## Response Order (Mandatory)
-- Always structure final user-facing explanation in this order:
-  1. Behavior and user impact (content-first narrative)
-  2. Verification narrative (what was tested, what confidence this gives)
-  3. Remaining risks or follow-up actions
-  4. Traceability appendix (plan path, changed files, evidence paths) - only when requested
-- Do not start the response with IDs, file paths, command logs, or task numbers.
+- Follow `.sigee/policies/response-rendering-contract.md` as the single response rendering source.
+- Keep developer reports behavior-first, verification-backed, and risk-aware.
+- Keep traceability appendix optional and hidden unless explicitly requested.
 
 ## Verification Baseline
 - Follow `references/execution-checklist.md`.
@@ -177,14 +158,14 @@ description: Plan-driven implementation and verification workflow for approved t
 - DAG gate wrappers:
   - smoke: `scripts/test_smoke.sh` (or node `smoke_gate`)
   - e2e: `scripts/test_e2e.sh` (or node `e2e_gate`)
+  - validation mode contract:
+    - `product` mode (default): validate target product behavior (`SIGEE_SMOKE_CMD` / `SIGEE_E2E_CMD` or project scripts)
+    - `framework` mode: validate ProofGraph runtime regressions (`--mode framework` or `scripts/self_check.sh`)
 - Use execution script:
   - `scripts/plan_run.sh <runtime-root>/plans/<plan-id>.md --mode strict`
   - add `--write-report` only when you want persistent report files
-- Use single-entry flow:
-  - `scripts/codex_flow.sh <runtime-root>/plans/<plan-id>.md --mode strict`
-  - add `--write-report` only when you want persistent report files
 - Script responsibility boundary:
-  - `plan_run.sh` / `codex_flow.sh` execute one approved plan file end-to-end.
+  - `plan_run.sh` executes one approved plan file end-to-end.
   - queue-wide iteration and routing (`developer-todo -> planner-review`) are orchestration responsibilities, not implicit script behavior.
 - Use failure resume:
   - `scripts/plan_run.sh <runtime-root>/plans/<plan-id>.md --resume`
@@ -195,16 +176,12 @@ description: Plan-driven implementation and verification workflow for approved t
 
 ## Output Contract
 Return:
-- long-form content summary (what changed, user impact, safety/verification rationale)
-- verification narrative (coverage, sufficiency, residual uncertainty)
+- behavior and user impact summary
+- verification confidence narrative
 - remaining risks or follow-up actions
 - task completion summary
-- traceability appendix at the end:
-  - plan path executed
-  - DAG pipeline path and selected execution mode (dry-run / changed-scope / targeted retry) when DAG mode is used
-  - key files changed
-  - verification outcomes in plain language (internal command details only when explicitly requested)
-- include one copy-ready `다음 실행 프롬프트` markdown block:
+- optional traceability appendix when requested
+- one copy-ready `다음 실행 프롬프트` markdown block at the end:
   - default intent: planning review
   - if blocked, include required user decision and blocker evidence in the prompt intent
   - write natural-language task intent only (no shell command/script/flag exposure)
@@ -215,7 +192,6 @@ Return:
 - Execution gate: `references/execution-checklist.md`
 - Final report format: `references/report-template.md`
 - Execution runner: `scripts/plan_run.sh`
-- Single-entry flow: `scripts/codex_flow.sh`
 - Report generator: `scripts/report_generate.sh`
 - Scale harness: `scripts/dag_stress.sh`
 - Dual-layer DAG regression: `scripts/dag_dual_layer_regression.sh`
@@ -227,8 +203,11 @@ Return:
 - Refactoring specialist playbook: `references/refactoring-specialist-playbook.md`
 - TDD node contract: `references/tdd-node-contract.md`
 - Test gates: `references/test-gates.md`
+- Self-check runner: `scripts/self_check.sh`
 - Governance baseline: `.sigee/README.md`, `.sigee/policies/gitignore-policy.md`
+- Shared response contract: `.sigee/policies/response-rendering-contract.md`
 - Product-truth policy: `.sigee/policies/product-truth-ssot.md`, `.sigee/product-truth/README.md`
 - Orchestration policy: `.sigee/policies/orchestration-loop.md`
 - Queue runtime helper: `../tech-planner/scripts/orchestration_queue.sh` (`loop-status --user-facing`, `next-prompt --user-facing`)
 - DAG scenario CRUD helper: `../tech-planner/scripts/dag_scenario_crud.sh`
+- Planner entry guard: `../tech-planner/scripts/planner_entry_guard.sh`

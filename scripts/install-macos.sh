@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACK_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEPLOY_SCRIPT="$SCRIPT_DIR/deploy.sh"
-DEFAULT_TARGET="${CODEX_HOME:-$HOME/.codex}/skills"
+DEFAULT_TARGET=""
 
 TARGET_ROOT="$DEFAULT_TARGET"
 DRY_RUN=0
@@ -19,7 +19,7 @@ Usage:
 Options:
   --skill <name>   Install one skill (repeatable)
   --all            Install all skills in this pack (default)
-  --target <path>  Override install target (default: ${CODEX_HOME:-$HOME/.codex}/skills)
+  --target <path>  Override install target (default: ${CODEX_HOME}/skills)
   --dry-run        Show planned actions without copying files
   --yes            Skip confirmation prompt
   --help           Show this message
@@ -63,6 +63,14 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+if [[ -z "$TARGET_ROOT" ]]; then
+  if [[ -z "${CODEX_HOME:-}" ]]; then
+    echo "ERROR: CODEX_HOME is not set. Export CODEX_HOME or pass --target <path>." >&2
+    exit 1
+  fi
+  TARGET_ROOT="${CODEX_HOME%/}/skills"
+fi
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
   echo "ERROR: install-macos.sh is for macOS only (detected: $(uname -s))." >&2
@@ -110,4 +118,3 @@ echo "Installed skills under: $TARGET_ROOT"
 if [[ -d "$TARGET_ROOT" ]]; then
   ls -1 "$TARGET_ROOT" | sed 's/^/- /'
 fi
-

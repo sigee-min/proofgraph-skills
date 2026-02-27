@@ -25,11 +25,18 @@ fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 QUEUE_SCRIPT="$SCRIPT_DIR/orchestration_queue.sh"
+USER_FACING_GUARD_SCRIPT="$SCRIPT_DIR/user_facing_guard.sh"
 
 if [[ ! -x "$QUEUE_SCRIPT" ]]; then
   echo "ERROR: missing executable queue helper: $QUEUE_SCRIPT" >&2
   exit 1
 fi
+if [[ ! -f "$USER_FACING_GUARD_SCRIPT" ]]; then
+  echo "ERROR: missing shared user-facing guard: $USER_FACING_GUARD_SCRIPT" >&2
+  exit 1
+fi
+# shellcheck disable=SC1090
+source "$USER_FACING_GUARD_SCRIPT"
 
 WORK_DIR="$(mktemp -d)"
 PROJECT_ROOT="$WORK_DIR/project"
@@ -67,6 +74,27 @@ assert_not_contains() {
   fi
 }
 
+assert_match_count() {
+  local haystack="$1"
+  local pattern="$2"
+  local expected="$3"
+  local label="$4"
+  local count
+  count="$(printf "%s\n" "$haystack" | grep -Ec "$pattern" || true)"
+  if [[ "$count" -ne "$expected" ]]; then
+    echo "ERROR: assertion failed ($label): expected $expected matches for /$pattern/, got $count" >&2
+    exit 1
+  fi
+}
+
+assert_no_internal_leak() {
+  local haystack="$1"
+  local label="$2"
+  if ! sigee_assert_no_internal_leak "$haystack" "$label"; then
+    exit 1
+  fi
+}
+
 run_queue init >/dev/null
 
 RESULTS_DIR="$PROJECT_ROOT/$RUNTIME_ROOT/evidence/regression"
@@ -99,6 +127,9 @@ DONE_OUT="$(run_queue move \
   --evidence "$MIXED_EVIDENCE" \
   --next-action "none" 2>&1)"
 assert_contains "$DONE_OUT" "다음 실행 프롬프트" "done transition next prompt block"
+assert_match_count "$DONE_OUT" '^다음 실행 프롬프트$' 1 "done transition next prompt title count"
+assert_match_count "$DONE_OUT" '^```md$' 1 "done transition markdown fence open count"
+assert_match_count "$DONE_OUT" '^```$' 1 "done transition markdown fence close count"
 assert_not_contains "$DONE_OUT" '$tech-planner' "done transition user-facing hides internal target"
 
 ARCHIVE_FILE="$PROJECT_ROOT/$RUNTIME_ROOT/orchestration/archive/done-$(date -u '+%Y-%m').tsv"
@@ -250,11 +281,20 @@ assert_contains "$NEXT_OUT" "NEXT_PROMPT_TARGET:" "next-prompt target output"
 assert_contains "$NEXT_OUT" "NEXT_PROMPT_QUEUE:" "next-prompt queue output"
 assert_contains "$NEXT_OUT" "NEXT_PROMPT_REASON:" "next-prompt reason output"
 assert_contains "$NEXT_OUT" "다음 실행 프롬프트" "next-prompt markdown block"
+assert_match_count "$NEXT_OUT" '^다음 실행 프롬프트$' 1 "next-prompt machine title count"
+assert_match_count "$NEXT_OUT" '^```md$' 1 "next-prompt machine markdown fence open count"
+assert_match_count "$NEXT_OUT" '^```$' 1 "next-prompt machine markdown fence close count"
 
 NEXT_USER_OUT="$(run_queue next-prompt --user-facing 2>&1)"
-assert_not_contains "$NEXT_USER_OUT" '$tech-' "user-facing next-prompt hides skill ids"
-assert_not_contains "$NEXT_USER_OUT" "runtime-root =" "user-facing next-prompt hides runtime path"
-assert_not_contains "$NEXT_USER_OUT" "LOOP_STATUS:" "user-facing next-prompt hides machine loop status"
+assert_match_count "$NEXT_USER_OUT" '^다음 실행 프롬프트$' 1 "next-prompt user title count"
+assert_match_count "$NEXT_USER_OUT" '^```md$' 1 "next-prompt user markdown fence open count"
+assert_match_count "$NEXT_USER_OUT" '^```$' 1 "next-prompt user markdown fence close count"
+assert_match_count "$NEXT_USER_OUT" '^왜 지금 이 작업인가:' 1 "next-prompt user rationale line count"
+assert_no_internal_leak "$NEXT_USER_OUT" "user-facing next-prompt leak check"
+
+LOOP_USER_OUT="$(run_queue loop-status --user-facing 2>&1)"
+assert_match_count "$LOOP_USER_OUT" '^요약:' 1 "loop-status user summary count"
+assert_no_internal_leak "$LOOP_USER_OUT" "user-facing loop-status leak check"
 
 # 7) developer profile hint extraction on claim
 run_queue add \
@@ -311,6 +351,11 @@ assert_contains "$PLAN_NEXT_OUT" "NEXT_PROMPT_TARGET:tech-planner" "plan auto-se
 assert_contains "$PLAN_NEXT_OUT" "NEXT_PROMPT_QUEUE:planner-inbox" "plan auto-seed next queue"
 
 PLAN_NEXT_USER_OUT="$(bash "$QUEUE_SCRIPT" next-prompt --user-facing --project-root "$PLAN_SYNC_ROOT" 2>&1)"
-assert_not_contains "$PLAN_NEXT_USER_OUT" '$tech-' "plan auto-seed user-facing hides skill ids"
+assert_match_count "$PLAN_NEXT_USER_OUT" '^왜 지금 이 작업인가:' 1 "plan auto-seed user rationale line count"
+assert_no_internal_leak "$PLAN_NEXT_USER_OUT" "plan auto-seed user-facing next-prompt leak check"
+
+PLAN_LOOP_USER_OUT="$(bash "$QUEUE_SCRIPT" loop-status --user-facing --project-root "$PLAN_SYNC_ROOT" 2>&1)"
+assert_match_count "$PLAN_LOOP_USER_OUT" '^요약:' 1 "plan auto-seed user loop-status summary count"
+assert_no_internal_leak "$PLAN_LOOP_USER_OUT" "plan auto-seed user-facing loop-status leak check"
 
 echo "orchestration_queue_regression passed: delimiter-compat + auto-escalation + reconcile-cleanup + triage + weekly-summary + next-prompt + profile-hint-claim + pending-plan-auto-seed"

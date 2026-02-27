@@ -1,0 +1,17 @@
+version: 1
+revision: 4
+updated_at: "2026-02-26T23:59:00Z"
+owner: "tech-planner"
+pillars:
+  - id: "PIL-ORCH-RELIABILITY"
+    vision_id: "VIS-PROOFGRAPH-001"
+    title: "Orchestration reliability"
+    statement: "Execution must be deterministic, observable, and recoverable."
+    status: "active"
+    notes: ""
+  - id: "PIL-STRATEGIC-CONSISTENCY"
+    vision_id: "VIS-PROOFGRAPH-001"
+    title: "Strategic consistency"
+    statement: "Requirement changes must preserve long-term product direction through explicit governance."
+    status: "active"
+    notes: ""
