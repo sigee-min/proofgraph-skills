@@ -17,6 +17,11 @@ description: Evidence-backed scientific and engineering translation for complex 
   - project applicability (repo/system constraints)
 - Never present unsupported claims as facts.
 
+## Platform Contract
+- macOS/Linux: native install and runtime workflows are supported.
+- Windows Tier 1: install/deploy is supported via PowerShell; runtime workflow execution assumes a WSL2-compatible shell path.
+- Windows Tier 2 (future): native Windows runtime workflow execution without WSL2.
+
 ## Trigger Signals
 Use this skill when user requests include one or more of the following:
 - complex simulation design (`3D`, `physics`, `fluid`, `collision`, `dynamics`)

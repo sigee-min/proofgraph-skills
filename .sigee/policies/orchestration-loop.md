@@ -107,6 +107,7 @@
 ## 내부 실행 규약
 
 - 큐 초기화, 라우팅, 상태 전이는 `orchestration_queue.sh`를 통해 스킬 내부에서 자동 실행한다.
+- 초기 preflight(`init`)는 queue/runtime뿐 아니라 누락된 governance/product-truth/scenario starter도 시드할 수 있다.
 - developer 실행 진입은 `planner_entry_guard.sh`로 강제한다.
   - planner 라우팅 컨텍스트가 없으면 실행을 차단하고 planner로 반환한다.
   - 마이그레이션/디버그 시에만 `SIGEE_ALLOW_DIRECT_ENTRY=1`로 한시적 우회할 수 있다.
@@ -122,6 +123,7 @@
 - 사용자 보고 렌더링은 `.sigee/policies/response-rendering-contract.md`를 단일 기준으로 따른다.
 - 사용자에게는 제품 영향 요약과 다음 실행 프롬프트만 노출하고, 스크립트 실행을 요구하지 않는다.
 - 큐/런타임 폴더와 `.sigee/templates/*` 로컬 템플릿은 최초 큐 동작 시 자동 생성한다.
+- bootstrap starter(`VIS-BOOT-*`, `PIL-BOOT-*`, `OBJ-BOOT-*`, `OUT-BOOT-*`, `CAP-BOOT-*`, `bootstrap_foundation_*`)는 임시값이며 실사용 전 project-specific 값으로 교체해야 한다.
 - queue helper는 lease를 자동 관리한다.
   - `claim`: `held:<worker>:<utc>`
   - handoff(`planner-review`/`blocked`/`done`): `released:<utc>`
@@ -143,7 +145,10 @@
   - PASS-only `verification-results.tsv`
   - PASS `dag/state/last-run.json` + evidence dir 존재
 - `done` 전이 시 product-truth 검증 외에 goal hierarchy 검증(`goal_governance_validate --strict`)을 함께 통과해야 한다.
+- source scenario catalog는 `.sigee/dag/scenarios/`를 기준으로 검증한다.
+- runtime-only scenario catalog(`.sigee/dag/scenarios` 없음 + `<runtime-root>/dag/scenarios`만 존재)는 계약 위반이며 `done` 전이를 즉시 차단한다.
 - product-truth 또는 source scenario 변경이 포함된 작업은 change impact gate 결과를 검증 근거로 첨부해야 한다.
 - 모든 handoff는 근거 링크/검증 로그를 포함한다.
 - DAG 테스트 계약(`unit_normal=2`, `unit_boundary=2`, `unit_failure=2`, `boundary_smoke=5`) 미충족 시 `done` 금지.
 - `done` 전이는 lifecycle phase 규칙 및 retry budget 규칙을 동시에 만족해야 한다.
+- bootstrap starter가 남아 있으면 `done` 금지(강제 교체 후 진행).

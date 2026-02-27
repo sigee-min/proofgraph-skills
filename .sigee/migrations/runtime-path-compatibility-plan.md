@@ -28,4 +28,4 @@
 
 - Legacy runtime plans/evidence/reports path
 - `.sigee/policies`, `.sigee/scenarios`, `.sigee/dag` (tracked)
-- `.sigee/templates` (local auto-generated, ignored)
+- `.sigee/templates` (consumer repo: local auto-generated + ignored by default, skill-pack: seed templates may be tracked)

@@ -62,6 +62,7 @@ USER_FACING_GUARD_SCRIPT="$SCRIPT_DIR/user_facing_guard.sh"
 USER_FACING_RENDERER_SCRIPT="$SCRIPT_DIR/user_facing_renderer.sh"
 QUEUE_STATE_MODULE_SCRIPT="$SCRIPT_DIR/orchestration_queue_state.sh"
 QUEUE_STORE_MODULE_SCRIPT="$SCRIPT_DIR/orchestration_queue_store.sh"
+QUEUE_RUNTIME_NODE_SCRIPT="${SIGEE_QUEUE_RUNTIME_NODE_SCRIPT:-$SCRIPT_DIR/../../../scripts/node/runtime/orchestration-queue.mjs}"
 
 if [[ ! -f "$USER_FACING_GUARD_SCRIPT" ]]; then
   echo "ERROR: missing shared user-facing guard: $USER_FACING_GUARD_SCRIPT" >&2
@@ -321,6 +322,19 @@ validate_done_gate() {
   local evidence_links="$3"
   local has_gate_pass=0
 
+  if command -v node >/dev/null 2>&1 && [[ -f "$QUEUE_RUNTIME_NODE_SCRIPT" ]]; then
+    if node "$QUEUE_RUNTIME_NODE_SCRIPT" validate-done-gate \
+      --project-root "$project_root" \
+      --ticket-id "$ticket_id" \
+      --evidence-links "$evidence_links" \
+      --runtime-root "$RUNTIME_ROOT" \
+      --product-truth-validate-script "$PRODUCT_TRUTH_VALIDATE_SCRIPT" \
+      --goal-governance-validate-script "$GOAL_GOV_VALIDATE_SCRIPT"; then
+      return 0
+    fi
+    exit 1
+  fi
+
   if ! is_meaningful_value "$evidence_links"; then
     echo "ERROR: move to 'done' requires non-empty evidence links for ticket '$ticket_id'." >&2
     exit 1
@@ -352,18 +366,32 @@ validate_done_gate() {
     exit 1
   fi
 
-  local scenario_dir="$project_root/.sigee/dag/scenarios"
-  if [[ ! -d "$scenario_dir" ]]; then
-    scenario_dir="$project_root/$RUNTIME_ROOT/dag/scenarios"
+  local source_scenario_dir="$project_root/.sigee/dag/scenarios"
+  local runtime_scenario_dir="$project_root/$RUNTIME_ROOT/dag/scenarios"
+  local has_source_scenarios=0
+  local has_runtime_scenarios=0
+
+  if [[ -d "$source_scenario_dir" ]] && find "$source_scenario_dir" -maxdepth 1 -type f -name '*.scenario.yml' | grep -q .; then
+    has_source_scenarios=1
   fi
-  if [[ -d "$scenario_dir" ]] && find "$scenario_dir" -maxdepth 1 -type f -name '*.scenario.yml' | grep -q .; then
+  if [[ -d "$runtime_scenario_dir" ]] && find "$runtime_scenario_dir" -maxdepth 1 -type f -name '*.scenario.yml' | grep -q .; then
+    has_runtime_scenarios=1
+  fi
+
+  if [[ "$has_source_scenarios" -eq 0 && "$has_runtime_scenarios" -eq 1 ]]; then
+    echo "ERROR: runtime scenario catalog exists without source catalog (.sigee/dag/scenarios)." >&2
+    echo "ERROR: restore source-of-truth scenarios before done transition." >&2
+    exit 1
+  fi
+
+  if [[ "$has_source_scenarios" -eq 1 ]]; then
     if [[ ! -x "$PRODUCT_TRUTH_VALIDATE_SCRIPT" ]]; then
       echo "ERROR: missing executable validator for done gate: $PRODUCT_TRUTH_VALIDATE_SCRIPT" >&2
       exit 1
     fi
     "$PRODUCT_TRUTH_VALIDATE_SCRIPT" \
       --project-root "$project_root" \
-      --scenario-dir "$scenario_dir" \
+      --scenario-dir "$source_scenario_dir" \
       --require-scenarios >/dev/null
 
     if [[ ! -x "$GOAL_GOV_VALIDATE_SCRIPT" ]]; then
@@ -372,7 +400,7 @@ validate_done_gate() {
     fi
     "$GOAL_GOV_VALIDATE_SCRIPT" \
       --project-root "$project_root" \
-      --scenario-dir "$scenario_dir" \
+      --scenario-dir "$source_scenario_dir" \
       --require-scenarios \
       --strict >/dev/null
   fi
@@ -1022,16 +1050,23 @@ next_prompt_message() {
       printf "%s" "제품 리스크를 줄일 수 있는 과학/수학 검증 과제 1건을 우선 처리해줘. 근거, 적용 방향, 검증 계획을 정리해줘."
       ;;
     tech-developer:developer-todo)
-      printf "%s" "사용자 가치가 가장 큰 구현 과제 1건을 strict로 완료해줘. 검증 근거와 함께 결과를 보고해줘."
+      printf "%s" "사용자 가치가 가장 큰 구현 과제 1건을 strict로 완료해줘.
+이번 사이클은 planner가 'planner-review -> done' 또는 정지 조건('STOP_DONE', 'STOP_USER_CONFIRMATION', 안전중단)에 도달할 때까지 내부 루프를 유지해줘.
+규칙:
+- developer는 'done'으로 직접 종료하지 말고 반드시 'planner-review'로 handoff
+- planner review 결과로만 'done' 또는 'developer-todo' 재라우팅 결정
+- runtime-only scenario catalog('.sigee/dag/scenarios' 없음 + '<runtime-root>/dag/scenarios'만 존재)이면 'done' 금지
+- bootstrap starter('VIS-BOOT-*', 'PIL-BOOT-*', 'OBJ-BOOT-*', 'OUT-BOOT-*', 'CAP-BOOT-*', 'bootstrap_foundation_*')가 남아 있으면 'done' 금지
+- 매 사이클마다 'evidence_links'를 최신 검증 근거로 갱신"
       ;;
     tech-planner:planner-inbox)
-      printf "%s" "신규 요구를 제품 기능으로 분해하고 우선순위를 정해줘. 바로 실행할 다음 작업 1건을 제시해줘."
+      printf "%s" "사용자가 말한 기능/목표를 기준으로 제품 기능 후보 3개를 자동 제시해줘. 각 후보를 사용자 체감 가치, 구현 리스크, 검증 가능성으로 비교하고 바로 실행할 단일 최우선 1개를 자동 확정해줘. 마지막에는 끊김 없이 다음 실행 프롬프트 1개를 제시해줘."
       ;;
     tech-planner:blocked-user-confirmation)
       printf "%s" "지금 사용자 결정이 필요한 항목만 요약해줘. 각 항목마다 권장 선택과 영향을 짧게 정리해줘."
       ;;
     tech-planner:completed)
-      printf "%s" "현재 사이클은 완료되었어. 다음 제품 목표 1개를 정하고 바로 시작할 첫 작업 1건을 제안해줘."
+      printf "%s" "현재 사이클은 완료되었어. 다음 제품 사이클을 위해 기능 후보 3개를 자동 제시하고 사용자 체감 가치, 구현 리스크, 검증 가능성으로 비교해줘. 바로 시작할 단일 최우선 1개를 자동 확정하고 다음 실행 프롬프트 1개를 제시해줘."
       ;;
     *)
       printf "%s" "다음으로 사용자 가치가 큰 작업 1건을 선정해줘. 선정 이유와 기대 변화를 함께 설명해줘."
@@ -1053,16 +1088,22 @@ next_prompt_message_user_facing() {
       printf "%s" "제품 적용 리스크를 줄일 수 있는 검증 과제 1건을 우선 처리해줘. 결과는 근거와 적용 방향 중심으로 설명해줘."
       ;;
     tech-developer:developer-todo)
-      printf "%s" "사용자 가치가 큰 기능 1건을 우선 구현해줘. 사용자 변화와 안전성 확인 결과 중심으로 설명해줘."
+      printf "%s" "사용자 가치가 큰 기능 1건을 우선 구현해줘. 이번 사이클은 리뷰 승인 완료 또는 중단 조건까지 내부적으로 연속 진행해줘.
+규칙:
+- 구현 담당자는 완료를 직접 확정하지 말고 항상 리뷰 단계로 넘긴다.
+- 최종 완료 여부는 리뷰 결과로만 결정한다.
+- 소스 시나리오 없이 런타임 산출물만 있는 상태에서는 완료 처리하지 않는다.
+- bootstrap starter('VIS-BOOT-*', 'PIL-BOOT-*', 'OBJ-BOOT-*', 'OUT-BOOT-*', 'CAP-BOOT-*', 'bootstrap_foundation_*')가 남아 있으면 완료 처리하지 않는다.
+- 매 사이클마다 검증 근거를 최신 상태로 갱신한다."
       ;;
     tech-planner:planner-inbox)
-      printf "%s" "신규 요구를 제품 기능으로 정리해 우선순위를 정해줘. 바로 시작할 다음 작업 1건만 제시해줘."
+      printf "%s" "사용자가 말한 기능/목표를 기준으로 기능 후보 3개를 자동 제시해줘. 각 후보를 사용자 체감 가치, 구현 리스크, 검증 가능성으로 비교하고 바로 실행할 단일 최우선 1개를 자동 확정해줘. 마지막에는 끊김 없이 다음 실행 프롬프트 1개를 제시해줘."
       ;;
     tech-planner:blocked-user-confirmation)
       printf "%s" "지금 필요한 사용자 결정을 정리해줘. 각 항목마다 권장 선택과 영향만 짧게 설명해줘."
       ;;
     tech-planner:completed)
-      printf "%s" "현재 사이클이 완료되었어. 다음 제품 목표 1개를 정하고 바로 시작할 첫 작업 1건을 제안해줘."
+      printf "%s" "현재 사이클이 완료되었어. 다음 제품 사이클을 위해 기능 후보 3개를 자동 제시하고 사용자 체감 가치, 구현 리스크, 검증 가능성으로 비교해줘. 바로 시작할 단일 최우선 1개를 자동 확정하고 다음 실행 프롬프트 1개를 제시해줘."
       ;;
     *)
       printf "%s" "다음으로 사용자 가치가 큰 작업 1건을 선정해줘. 선정 이유와 기대 변화를 함께 설명해줘."

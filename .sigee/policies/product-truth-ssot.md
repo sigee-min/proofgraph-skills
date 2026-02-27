@@ -21,6 +21,7 @@
   - `stability_layer` (`core|system|experimental`)
   - mandatory test bundles (`2/2/2 + smoke 5`)
 - Runtime scenario files under `<runtime-root>/dag/scenarios/` are compiled artifacts and must not be hand-edited.
+- Runtime-only scenario catalog is invalid for completion gates; source catalog under `.sigee/dag/scenarios/` is mandatory.
 - Scenario catalog interaction must prefer CRUD interface script:
   - `skills/tech-planner/scripts/dag_scenario_crud.sh`
 - Automated semantic validation gate:
@@ -44,3 +45,9 @@
 - `revision` increments on approved intent changes.
 - `updated_at` is required in UTC.
 - Planner-review gate confirms freshness before `done`.
+
+## Bootstrap Starter Guard (Hard)
+- Preflight bootstrap starter ids are allowed only for initial scaffold creation:
+  - `VIS-BOOT-*`, `PIL-BOOT-*`, `OBJ-BOOT-*`, `OUT-BOOT-*`, `CAP-BOOT-*`, `bootstrap_foundation_*`
+- Starter scaffold is not production intent and must be replaced before first `planner-review -> done`.
+- Any done/release flow with starter scaffold remaining is policy violation and must be blocked.

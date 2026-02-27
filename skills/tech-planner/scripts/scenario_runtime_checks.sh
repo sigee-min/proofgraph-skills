@@ -501,6 +501,7 @@ check_next_prompt_blackbox() {
   assert_match_count "$out" '^```md$' 1 "next prompt markdown fence open count"
   assert_match_count "$out" '^```$' 1 "next prompt markdown fence close count"
   assert_match_count "$out" '^왜 지금 이 작업인가:' 1 "next prompt rationale line count"
+  assert_contains "$out" "후보 3개" "next prompt intake candidate contract"
   assert_no_internal_leak "$out" "next-prompt user-facing leak check"
 
   loop_out="$(run_queue "$project" loop-status --user-facing 2>&1)"

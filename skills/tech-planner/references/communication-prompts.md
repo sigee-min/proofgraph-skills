@@ -44,6 +44,10 @@ When ending the plan handoff, provide a no-CLI next prompt:
   - if implementation-ready, request implementation execution next
 - scientific handoff must request evidence package + planning review return
 - developer handoff must request strict execution + verification narrative
+- developer handoff must explicitly require continuous internal loop until review-approved completion or stop condition
+  - implementer must not self-close completion directly
+  - completion decision is review-owned
+  - runtime-only scenario catalog and remaining bootstrap starter scaffold must be treated as completion blockers
 - do not expose shell commands, script paths, or CLI flags
 - do not expose runtime paths/config, queue names, ticket IDs, plan IDs, or internal gate labels
 Explain that default behavior is chat-first and report files are generated only when explicitly requested.
@@ -57,4 +61,14 @@ If loop mode is active, keep orchestration details hidden and explain only produ
 - what remains for the next cycle
 - whether user confirmation is required
 Do not mention runtime queue paths, queue names, or internal state-machine terms by default.
+```
+
+## Cross-platform gate failure briefing
+```text
+When Governance CI fails on any OS lane, produce an operator-facing brief in this order:
+1) What failed (OS lane + failing verification stage),
+2) User/release impact (deployment blocked or not),
+3) Immediate action (rollback level A/B/C),
+4) Re-open condition (all OS lanes green + deployment gate green).
+Keep it short, actionable, and free of internal implementation jargon.
 ```

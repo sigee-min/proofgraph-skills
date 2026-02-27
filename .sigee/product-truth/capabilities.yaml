@@ -1,6 +1,6 @@
 version: 1
-revision: 4
-updated_at: "2026-02-26T23:59:00Z"
+revision: 5
+updated_at: "2026-02-27T00:00:00Z"
 owner: "tech-planner"
 capabilities:
   - id: "CAP-ORCH-STATE"
@@ -65,3 +65,17 @@ capabilities:
       - "Unverified destructive refactors"
       - "Automated profile inference from external services"
     notes: "Targets sustained codebase hygiene under frequent requirement changes."
+  - id: "CAP-ORCH-XPLAT"
+    outcome_id: "OUT-ORCH-001"
+    stability_layer_default: "system"
+    name: "Cross-platform runtime parity"
+    description: "Runtime orchestration executes with equivalent behavior, trust, and speed across macOS, Linux, and Windows."
+    status: "active"
+    in_scope:
+      - "OS-neutral runtime core for queue transition and done-gate evaluation"
+      - "Cross-platform parity validation lanes for runtime orchestration workflows"
+      - "Equivalent user-facing loop behavior across operating systems"
+    out_of_scope:
+      - "OS-specific feature divergence by default runtime path"
+      - "Manual per-OS scripting as primary runtime implementation"
+    notes: "Targets Windows parity with existing macOS/Linux runtime behavior."

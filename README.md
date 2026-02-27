@@ -1,112 +1,125 @@
 # ProofGraph Skills
 
-Codex에서 제품 개발을 끝까지 밀어붙이기 위한 사용자 중심 스킬 팩입니다.
-핵심은 하나입니다: 사용자는 기능/목표만 말하고, 스킬은 계획-구현-검증 루프를 내부에서 처리합니다.
+Codex에서 쓰는 스킬 3종(`tech-planner`, `tech-developer`, `tech-scientist`)을
+설치하고 배포하는 저장소입니다.
 
-## 사용자에게 보이는 가치
+## 이 스킬팩의 컨셉
 
-- 제품 중심 대화: 내부 큐/런타임 용어 없이 결과와 다음 액션만 확인
-- 검증 기반 완료: 테스트/근거 없는 “완료”를 차단
-- 연속 실행 흐름: 매 응답 끝에 다음 실행 프롬프트 1개 제공
-- 복잡한 문제 대응: 과학/수학/AI 이슈도 개발 가능한 형태로 변환
+이 스킬팩은 DAG를 단순 실행 그래프가 아니라 제품 목표를 운영하는 제어 레이어로 사용합니다.
+`.sigee/product-truth`의 전역 목표(vision, pillar, objective, outcome, capability)를 기준으로
+우선순위와 완료 조건을 맞추고, 시나리오 DAG로 계획-구현-검증의 연결을 추적합니다.
+핵심은 "작업 목록"보다 "목표 정합성"을 먼저 관리하는 방식입니다.
 
-## 이 팩이 맞는 경우
+## 방법론
 
-- AI와 함께 혼자 큰 프로젝트를 운영하는 경우
-- 요구사항이 자주 바뀌어도 방향성과 품질을 같이 지키고 싶은 경우
-- “빨리”보다 “재현 가능하게 완성”을 선호하는 경우
+흐름은 계획, 실행, 리뷰 순서로 돌아갑니다.
+`tech-planner`가 요구사항을 실행 가능한 단위로 나누고, `tech-developer`가 strict 모드로 구현과 검증을 진행합니다.
+수치 해석, 시뮬레이션, AI 방법론처럼 불확실성이 큰 구간은 `tech-scientist`가 근거와 검증 계획을 먼저 고정합니다.
+그다음 리뷰 게이트에서 완료 여부를 판단하고, 필요하면 다시 실행 큐로 되돌립니다.
 
-## 사용 방식 (블랙박스 UX)
+여기서 중요한 원리는 제어역전(IoC)입니다.
+사용자가 매번 절차를 직접 지시하지 않아도, planner가 큐 상태와 검증 근거를 읽어 다음 실행을 결정합니다.
+developer와 scientist는 결과와 evidence를 review로 반환하고, `done`은 review 기준을 통과했을 때만 열립니다.
 
-1. 만들고 싶은 기능/목표를 자연어로 설명
-2. 제시된 `다음 실행 프롬프트`를 복붙해 이어서 실행
-3. 목표 달성까지 반복
+## 장점과 트레이드오프
 
-기본적으로 사용자가 큐, DAG, 런타임 스크립트를 직접 다룰 필요는 없습니다.
+이 구조의 장점은 전역 목표와 실제 구현이 DAG/traceability로 묶여 방향 이탈이 줄어든다는 점입니다.
+또한 완료 기준이 근거 기반이라 "완료라고 했지만 재현되지 않는" 문제를 초기에 줄일 수 있습니다.
+역할이 계획/구현/검증으로 분리되어 있어 이슈가 생겼을 때 원인 위치를 좁히기도 쉽습니다.
 
-## 스킬 구성
+대신 단점도 분명합니다.
+빠른 데모만 필요한 작은 작업에서는 절차가 무겁게 느껴질 수 있고,
+저장소에 테스트/검증 명령이 정리되어 있지 않으면 strict 게이트가 속도를 떨어뜨릴 수 있습니다.
+초기에는 세팅 비용이 들지만, 반복 개발 구간에서는 안정성이 더 커지는 쪽에 가깝습니다.
 
-- `tech-planner`
-  - 요구사항을 실행 가능한 계획으로 분해하고 우선순위/리스크를 정리
-- `tech-developer`
-  - 승인된 계획을 strict 모드로 구현하고 검증 근거까지 제출
-- `tech-scientist`
-  - 시뮬레이션/수학/AI 문제를 논문 근거 + 의사코드 + 검증계획으로 변환
+## 포함된 스킬
 
-## 지원 언어
+현재 포함된 스킬은 `tech-planner`, `tech-developer`, `tech-scientist`이며,
+각각 계획 수립, strict 구현, 과학/수치 검증 보강을 담당합니다.
 
-### 1) 사용자 대화 언어
+## 기본 사용 흐름
 
-- 한국어: 권장
-- English: fully usable
-- 기타 언어: 사용 가능하지만 템플릿/회귀 규칙은 한/영 기준으로 최적화되어 있음
+사용자는 목표와 요구사항 중심으로 요청하면 됩니다.
+일반적인 순서는 planner로 계획을 만들고, developer로 구현/검증을 진행하며,
+필요하면 scientist를 거쳐 불확실성을 줄인 뒤 review를 통과시켜 완료하는 방식입니다.
+내부 큐나 런타임 경로는 기본적으로 사용자 대화에 노출하지 않습니다.
 
-### 2) 제품/코드 스택 언어
+## 실행 환경
 
-- 특정 언어에 고정되지 않은 스택-중립 구조
-- 일반적으로 다음 스택에서 사용 가능:
-  - TypeScript/JavaScript
-  - Python
-  - Go
-  - Java/Kotlin
-  - Rust
-  - C/C++
-  - Swift
-- 전제 조건:
-  - 저장소에 실행 가능한 빌드/테스트/검증 명령이 있어야 함
-
-### 3) 응답 언어 규칙
-
-- 기본적으로 사용자의 현재 대화 언어를 따라감
-- 요청 시 다른 언어로 고정 가능
-
-## 품질 계약 (요약)
-
-- strict 실행이 기본값
-- 완료 판정은 검증 근거가 있어야 통과
-- 사용자 응답은 항상 다음 순서 유지:
-  - 제품 변화/영향
-  - 검증 신뢰
-  - 잔여 리스크
-- 마지막에는 `다음 실행 프롬프트` 코드블록 1개만 제공
+- Node.js 20+
+- Windows 설치 래퍼 사용 시 PowerShell 7+
 
 ## 설치
+
+추천 방식:
 
 ```md
 $skill-installer
 Install tech-planner, tech-developer, and tech-scientist from this repository into my Codex skills path.
 ```
 
-## 빠른 시작
+로컬 스크립트로 직접 설치:
 
-### 기획 시작
+```bash
+node scripts/node/skillpack-cli.mjs install --all
+```
+
+플랫폼 래퍼:
+
+```bash
+bash scripts/install-macos.sh --all
+bash scripts/install.sh --all
+```
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/install-windows.ps1 -All
+```
+
+## 배포
+
+```bash
+node scripts/node/skillpack-cli.mjs deploy --all
+```
+
+Windows:
+
+```powershell
+pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/deploy.ps1 -All
+```
+
+## 빠른 시작 프롬프트
+
+기획:
 
 ```md
 $tech-planner
-
 신규 요구를 제품 기능으로 분해하고 우선순위를 정해줘.
 바로 실행할 다음 작업 1건만 제시해줘.
 ```
 
-### 구현 실행
+구현:
 
 ```md
 $tech-developer
-
 승인된 계획을 strict 모드로 끝까지 실행해줘.
 사용자 영향, 검증 신뢰, 잔여 리스크 순서로 보고해줘.
 ```
 
-### 과학/AI 검증
+과학/AI 검증:
 
 ```md
 $tech-scientist
-
 복잡한 시뮬레이션/수학/AI 문제를 논문 근거 기반으로
 의사코드와 검증 계획까지 만들어줘.
 ```
 
-## 저장소 운영 원칙 (짧게)
+## 운영 메모
 
-- `.sigee/`: 정책/제품 진실(SSoT) 같은 장기 지식
+- `Governance CI`는 macOS/Linux/Windows를 모두 확인합니다.
+- 한 OS라도 실패하면 `Deployment Gate`를 통과할 수 없습니다.
+- 상세 런북: `.sigee/migrations/windows-governance-gate-runbook.md`
+
+## 저장소 구조
+
+- `.sigee/`: 정책, 제품 진실(SSoT), 운영 문서
 - `.sigee/.runtime/`: 실행 중 생성되는 런타임 산출물(기본 git ignore)

@@ -352,6 +352,7 @@ assert_contains "$PLAN_NEXT_OUT" "NEXT_PROMPT_QUEUE:planner-inbox" "plan auto-se
 
 PLAN_NEXT_USER_OUT="$(bash "$QUEUE_SCRIPT" next-prompt --user-facing --project-root "$PLAN_SYNC_ROOT" 2>&1)"
 assert_match_count "$PLAN_NEXT_USER_OUT" '^왜 지금 이 작업인가:' 1 "plan auto-seed user rationale line count"
+assert_contains "$PLAN_NEXT_USER_OUT" "후보 3개" "plan auto-seed user intake candidate contract"
 assert_no_internal_leak "$PLAN_NEXT_USER_OUT" "plan auto-seed user-facing next-prompt leak check"
 
 PLAN_LOOP_USER_OUT="$(bash "$QUEUE_SCRIPT" loop-status --user-facing --project-root "$PLAN_SYNC_ROOT" 2>&1)"

@@ -15,6 +15,13 @@ Examples:
 USAGE
 }
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NODE_DAG_RUNNER_SCRIPT="${SIGEE_DAG_RUNNER_NODE_SCRIPT:-$SCRIPT_DIR/../../../scripts/node/runtime/dag-runner.mjs}"
+
+if command -v node >/dev/null 2>&1 && [[ -f "$NODE_DAG_RUNNER_SCRIPT" ]]; then
+  exec node "$NODE_DAG_RUNNER_SCRIPT" "$@"
+fi
+
 if [[ $# -lt 1 ]]; then
   usage
   exit 1
@@ -28,7 +35,6 @@ INCLUDE_GLOBAL_GATES=0
 ONLY_NODE=""
 CHANGED_FILE_ARGS=()
 RUNTIME_ROOT="${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DAG_COMPILE_SCRIPT="$SCRIPT_DIR/dag_compile.sh"
 
 if [[ -z "$RUNTIME_ROOT" || "$RUNTIME_ROOT" == "." || "$RUNTIME_ROOT" == ".." || "$RUNTIME_ROOT" == /* || "$RUNTIME_ROOT" == *".."* ]]; then

@@ -13,6 +13,13 @@ Examples:
 USAGE
 }
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NODE_DAG_COMPILE_SCRIPT="${SIGEE_DAG_COMPILE_NODE_SCRIPT:-$SCRIPT_DIR/../../../scripts/node/runtime/dag-compile.mjs}"
+
+if command -v node >/dev/null 2>&1 && [[ -f "$NODE_DAG_COMPILE_SCRIPT" ]]; then
+  exec node "$NODE_DAG_COMPILE_SCRIPT" "$@"
+fi
+
 RUNTIME_ROOT="${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}"
 if [[ -z "$RUNTIME_ROOT" || "$RUNTIME_ROOT" == "." || "$RUNTIME_ROOT" == ".." || "$RUNTIME_ROOT" == /* || "$RUNTIME_ROOT" == *".."* ]]; then
   echo "ERROR: SIGEE_RUNTIME_ROOT must be a safe relative path (e.g. .sigee/.runtime)" >&2

@@ -16,6 +16,11 @@ description: Plan-driven implementation and verification workflow for approved t
 - Execute through an explicit developer profile. If no profile hint is present, default to `generalist`.
 - Enforce planner-first entry: without planner-routed context, do not execute implementation and route back to `tech-planner`.
 
+## Platform Contract
+- macOS/Linux: native install and runtime workflows are supported.
+- Windows Tier 1: install/deploy is supported via PowerShell; runtime workflow execution assumes a WSL2-compatible shell path.
+- Windows Tier 2 (future): native Windows runtime workflow execution without WSL2.
+
 ## Developer Profiles (Mandatory)
 - Supported profiles:
   - `generalist`

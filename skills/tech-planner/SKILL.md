@@ -14,31 +14,42 @@ description: Evidence-backed technical planning for complex implementation work.
 - Treat `.sigee` governance documents as the default policy reference for workflow rules, templates, and runtime orchestration decisions.
 - Apply `.sigee/policies/response-rendering-contract.md` for final user-facing response rendering.
 
+## Platform Contract
+- macOS/Linux: native install and runtime workflows are supported.
+- Windows Tier 1: install/deploy is supported via PowerShell; runtime workflow execution assumes a WSL2-compatible shell path.
+- Windows Tier 2 (future): native Windows runtime workflow execution without WSL2.
+
 ## Workflow
-1. Classify the request: trivial, feature, refactor, architecture, or research.
-2. Gather context from local code and relevant docs before proposing structure.
+1. Run runtime preflight before any planning work:
+   - resolve project root
+   - run `scripts/orchestration_queue.sh init --project-root <project-root>` internally (idempotent) so `<runtime-root>` always exists
+   - if governance/product-truth/scenario assets are missing, preflight may seed starter scaffolds
+   - starter scaffold(`VIS-BOOT-*`, `PIL-BOOT-*`, `OBJ-BOOT-*`, `OUT-BOOT-*`, `CAP-BOOT-*`, `bootstrap_foundation_*`) is temporary and must be replaced with project-specific intent before first `planner-review -> done`
+   - never ask the user to run this command
+2. Classify the request: trivial, feature, refactor, architecture, or research.
+3. Gather context from local code and relevant docs before proposing structure.
    - if the task requires complex simulation/numerical/scientific reasoning, request a `$tech-scientist` package first (problem formulation + evidence matrix + pseudocode + validation plan)
    - treat `.sigee/product-truth/` as planning SSoT and reconcile outcome/capability/scenario links before drafting execution waves
-3. Interview for missing constraints:
+4. Interview for missing constraints:
    - business objective
    - scope IN/OUT
    - technical constraints
    - testing and verification expectations
    - rollout and rollback expectations
-4. Select a plan path:
+5. Select a plan path:
    - use `<runtime-root>/plans/<plan-id>.md` (required, default runtime root is `.sigee/.runtime`)
    - align policy/template assumptions with `.sigee` governance docs
    - for scenario-driven delivery, define `.sigee/dag/scenarios/<scenario-id>.scenario.yml` as UX DAG source and map `red/impl/green/smoke/e2e` gates
    - runtime DAG scenarios are compiled artifacts at `<runtime-root>/dag/scenarios/` (do not hand-edit)
    - for scenario CRUD/inspection, prefer `scripts/dag_scenario_crud.sh` (`list/show/summary/create/set/validate`) instead of direct bulk file reads
-5. Write the plan using the required template in `references/plan-template.md`.
+6. Write the plan using the required template in `references/plan-template.md`.
    - enforce `mode: strict` (hard TDD baseline)
-6. Run the quality gate in `references/planning-checklist.md`.
-7. Run lint:
+7. Run the quality gate in `references/planning-checklist.md`.
+8. Run lint:
    - `scripts/plan_lint.sh <runtime-root>/plans/<plan-id>.md`
    - this automatically runs `scripts/sigee_gitignore_guard.sh <project-root>` to check/apply `.sigee` gitignore policy
    - this also runs `scripts/product_truth_validate.sh` to enforce product-truth cross-reference consistency (`outcomes/capabilities/traceability` and scenario linkage when present)
-8. End with a clear handoff prompt for the selected route target (scientific validation track or implementation track):
+9. End with a clear handoff prompt for the selected route target (scientific validation track or implementation track):
    - loop 상태와 무관하게 copy-ready markdown fenced block(` ```md `) `다음 실행 프롬프트`를 제공
    - 종료/의사결정 필요 상태에서는 다음 라우팅 대신 "다음 사이클 시작/의사결정 해소" 프롬프트를 제공
    - handoff prompt must be intent-first and no-CLI:
@@ -81,7 +92,9 @@ description: Evidence-backed technical planning for complex implementation work.
   - run done transition under planner actor (`SIGEE_QUEUE_ACTOR=tech-planner` or `--actor tech-planner`)
   - require non-empty `evidence_links`
   - require passing evidence gate (`verification-results.tsv` PASS-only or `dag/state/last-run.json` PASS)
-  - if scenario catalog exists, require `product_truth_validate` pass before done
+  - if source scenario catalog exists under `.sigee/dag/scenarios`, require both `product_truth_validate` and `goal_governance_validate --strict` pass before done
+  - runtime-only catalog (`<runtime-root>/dag/scenarios` exists while `.sigee/dag/scenarios` is missing/empty) is a hard error and blocks `done`
+  - bootstrap starter ids/content are forbidden at done gate; planner must replace starter scaffold with project-specific truth before `planner-review -> done`
   - when `planner-review -> done` succeeds, queue helper must evaluate `loop-status` first:
     - `CONTINUE`이면 실행 라우팅용 `다음 실행 프롬프트`를 자동 추천
     - `STOP_DONE` 또는 `STOP_USER_CONFIRMATION`이어도 다음 사이클 시작/의사결정 해소용 `다음 실행 프롬프트`를 출력
@@ -102,7 +115,9 @@ description: Evidence-backed technical planning for complex implementation work.
   - 2 consecutive no-progress cycles
   - mandatory test contract failure that requires re-planning
 - Queue runtime bootstrapping is internal:
-  - if queue or template assets are missing, run `scripts/orchestration_queue.sh` internally to auto-bootstrap
+  - planner preflight must always run at planner entry (even outside loop mode): `scripts/orchestration_queue.sh init --project-root <project-root>`
+  - if queue/template/governance starter assets are missing, run `scripts/orchestration_queue.sh` internally to auto-bootstrap
+  - starter scaffold is bootstrap-only; convert to project-specific product-truth/scenario content before `done`
   - before `loop-status`/`next-prompt`, auto-sync pending plan backlog into `planner-inbox` to prevent false completion
   - by default in loop mode, run `scripts/orchestration_autoloop.sh` internally for developer<->review continuous execution
     - loop scope: `planner-inbox(plan-backed) -> developer-todo -> planner-review -> done|requeue`

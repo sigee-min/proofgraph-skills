@@ -9,7 +9,7 @@
 | `.sigee/README.md` | Tracked | Entry point for new contributors |
 | `.sigee/policies/` | Tracked | Normative operating policy and prompt contracts |
 | `.sigee/product-truth/` | Tracked | Single source of truth for outcomes, capabilities, and traceability |
-| `.sigee/templates/` | Ignored | Auto-generated local templates created by queue runtime bootstrap |
+| `.sigee/templates/` | Ignored by default | Runtime bootstrap creates local templates; skill-pack may carry seed templates |
 | `.sigee/scenarios/` | Tracked | Human-readable scenario notes (reference only) |
 | `.sigee/dag/schema/` | Tracked | DAG schema and node contracts |
 | `.sigee/dag/pipelines/` | Tracked | Baseline pipeline definitions |
@@ -30,7 +30,7 @@
 - `.sigee/product-truth/` is the authoritative planning source; planner must reconcile updates here first.
 - UX DAG scenarios are tracked in `.sigee/dag/scenarios/`.
 - Runtime DAG scenarios at `<runtime-root>/dag/scenarios/` are compiled artifacts only.
-- `.sigee/templates/` is generated locally and intentionally excluded from git history.
+- `.sigee/templates/` is ignored by default in consumer repos; this skill-pack may keep seed templates for bootstrap parity.
 - If report/evidence needs to be preserved, promote a summarized snapshot into `migrations/` or a release note rather than committing raw runtime output.
 - Report snapshots for releases are tracked only under `.sigee/migrations/release-report-snapshots/`.
 

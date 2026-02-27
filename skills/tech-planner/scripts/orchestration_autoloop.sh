@@ -27,8 +27,13 @@ if [[ -z "$RUNTIME_ROOT" || "$RUNTIME_ROOT" == "." || "$RUNTIME_ROOT" == ".." ||
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NODE_AUTOLOOP_SCRIPT="${SIGEE_ORCHESTRATION_AUTOLOOP_NODE_SCRIPT:-$SCRIPT_DIR/../../../scripts/node/runtime/orchestration-autoloop.mjs}"
 QUEUE_SCRIPT="$SCRIPT_DIR/orchestration_queue.sh"
 PLAN_RUN_SCRIPT="$SCRIPT_DIR/../../tech-developer/scripts/plan_run.sh"
+
+if command -v node >/dev/null 2>&1 && [[ -f "$NODE_AUTOLOOP_SCRIPT" ]]; then
+  exec node "$NODE_AUTOLOOP_SCRIPT" "$@"
+fi
 
 if [[ ! -x "$QUEUE_SCRIPT" ]]; then
   echo "ERROR: missing executable queue helper: $QUEUE_SCRIPT" >&2

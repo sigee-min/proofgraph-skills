@@ -4,7 +4,9 @@ interface:
   default_prompt: >-
     Use $tech-planner to produce execution-ready plans with measurable acceptance criteria.
     Treat `.sigee/product-truth/` as planning SSoT, and apply governance checks internally.
-    In loop mode, planner is the only orchestrator; never ask users to run scripts.
+    At planner entry, run runtime preflight internally (`orchestration_queue.sh init --project-root`)
+    so `<runtime-root>` always exists; never ask users to run scripts.
+    In loop mode, planner is the only orchestrator.
     Enforce single-entry control: scientist/developer execution must start only from planner-routed context.
     Route scientist-first when scientific uncertainty remains, and developer-only when implementation-ready.
     Render final responses by `.sigee/policies/response-rendering-contract.md`.

@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 
+QUEUE_STATE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+QUEUE_RUNTIME_NODE_SCRIPT="${QUEUE_RUNTIME_NODE_SCRIPT:-$QUEUE_STATE_SCRIPT_DIR/../../../scripts/node/runtime/orchestration-queue.mjs}"
+
+queue_runtime_node_available() {
+  command -v node >/dev/null 2>&1 && [[ -f "$QUEUE_RUNTIME_NODE_SCRIPT" ]]
+}
+
 auto_lease_for_transition() {
   local to_queue="$1"
   local status="$2"
@@ -59,6 +66,18 @@ validate_phase_transition() {
   local from_queue="$3"
   local to_queue="$4"
   local to_status="$5"
+
+  if queue_runtime_node_available; then
+    if node "$QUEUE_RUNTIME_NODE_SCRIPT" validate-phase-transition \
+      --from-phase "$from_phase" \
+      --to-phase "$to_phase" \
+      --from-queue "$from_queue" \
+      --to-queue "$to_queue" \
+      --to-status "$to_status"; then
+      return 0
+    fi
+    exit 1
+  fi
 
   if [[ "$from_phase" == "$to_phase" ]]; then
     return 0

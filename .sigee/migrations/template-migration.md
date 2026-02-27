@@ -19,7 +19,8 @@ Legacy template-seeds source:
 ## 운영 정책 변경
 
 - 템플릿은 큐 런타임 부트스트랩 시 자동 생성한다(내부 실행).
-- `.sigee/templates/**`는 로컬 전용으로 git에서 추적하지 않는다.
+- `.sigee/templates/**`는 소비자 저장소 기준으로 로컬 전용(기본 ignore)이다.
+- 스킬팩 저장소는 부트스트랩 기준선을 유지하기 위해 seed 템플릿을 추적할 수 있다.
 
 ## 필수 필드 검수
 

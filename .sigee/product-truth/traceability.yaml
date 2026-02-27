@@ -1,6 +1,6 @@
 version: 1
-revision: 4
-updated_at: "2026-02-26T23:59:00Z"
+revision: 5
+updated_at: "2026-02-27T00:00:00Z"
 owner: "tech-planner"
 links:
   - outcome_id: "OUT-ORCH-001"
@@ -63,3 +63,15 @@ links:
       boundary_smoke: 5
     status: "active"
     notes: "Profile specialization and residue cleanup safety coverage."
+  - outcome_id: "OUT-ORCH-001"
+    capability_id: "CAP-ORCH-XPLAT"
+    scenario_id: "orchestration_runtime_parity"
+    dag_node_prefix: "orchestration_runtime_parity"
+    stability_layer: "system"
+    required_test_contract:
+      unit_normal: 2
+      unit_boundary: 2
+      unit_failure: 2
+      boundary_smoke: 5
+    status: "active"
+    notes: "Cross-platform runtime parity coverage for Windows/macOS/Linux equivalence."

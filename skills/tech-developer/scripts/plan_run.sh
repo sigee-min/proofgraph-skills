@@ -26,8 +26,13 @@ GENERATE_REPORT=0
 RESUME=0
 RUNTIME_ROOT="${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NODE_PLAN_RUNNER_SCRIPT="${SIGEE_PLAN_RUNNER_NODE_SCRIPT:-$SCRIPT_DIR/../../../scripts/node/runtime/plan-runner.mjs}"
 GITIGNORE_GUARD_SCRIPT="$SCRIPT_DIR/../../tech-planner/scripts/sigee_gitignore_guard.sh"
 PLANNER_ENTRY_GUARD_SCRIPT="$SCRIPT_DIR/../../tech-planner/scripts/planner_entry_guard.sh"
+
+if command -v node >/dev/null 2>&1 && [[ -f "$NODE_PLAN_RUNNER_SCRIPT" ]]; then
+  exec node "$NODE_PLAN_RUNNER_SCRIPT" "$PLAN_FILE" "$@"
+fi
 
 if [[ -z "$RUNTIME_ROOT" || "$RUNTIME_ROOT" == "." || "$RUNTIME_ROOT" == ".." || "$RUNTIME_ROOT" == /* || "$RUNTIME_ROOT" == *".."* ]]; then
   echo "ERROR: SIGEE_RUNTIME_ROOT must be a safe relative path (e.g. .sigee/.runtime)" >&2

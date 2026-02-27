@@ -1,6 +1,6 @@
 version: 1
-revision: 4
-updated_at: "2026-02-26T23:59:00Z"
+revision: 5
+updated_at: "2026-02-27T00:00:00Z"
 owner: "tech-planner"
 outcomes:
   - id: "OUT-ORCH-001"
@@ -13,4 +13,5 @@ outcomes:
       - "DAG execution emits machine-readable state and trace artifacts."
       - "Synthetic scale scenarios (50, 200, 500 nodes) run under defined performance budgets."
       - "Developer profile routing and refactoring-specialist cleanup gates preserve behavior while reducing residue code."
+      - "Runtime orchestration executes equivalently on macOS/Linux/Windows without OS-specific behavior divergence."
     notes: "Aligned to external architecture review feedback on 2026-02-26."

@@ -13,12 +13,18 @@ Examples:
 USAGE
 }
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NODE_DAG_BUILD_SCRIPT="${SIGEE_DAG_BUILD_NODE_SCRIPT:-$SCRIPT_DIR/../../../scripts/node/runtime/dag-build.mjs}"
+
+if command -v node >/dev/null 2>&1 && [[ -f "$NODE_DAG_BUILD_SCRIPT" ]]; then
+  exec node "$NODE_DAG_BUILD_SCRIPT" "$@"
+fi
+
 RUNTIME_ROOT="${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}"
 if [[ -z "$RUNTIME_ROOT" || "$RUNTIME_ROOT" == "." || "$RUNTIME_ROOT" == ".." || "$RUNTIME_ROOT" == /* || "$RUNTIME_ROOT" == *".."* ]]; then
   echo "ERROR: SIGEE_RUNTIME_ROOT must be a safe relative path (e.g. .sigee/.runtime)" >&2
   exit 1
 fi
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PRODUCT_TRUTH_VALIDATE_SCRIPT="$SCRIPT_DIR/../../tech-planner/scripts/product_truth_validate.sh"
 GOAL_GOV_VALIDATE_SCRIPT="$SCRIPT_DIR/../../tech-planner/scripts/goal_governance_validate.sh"
 DAG_COMPILE_SCRIPT="$SCRIPT_DIR/dag_compile.sh"

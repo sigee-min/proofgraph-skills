@@ -79,9 +79,12 @@ IMPACT_CMD=(
 if [[ "$NO_LAYER_GUARD" -ne 1 ]]; then
   IMPACT_CMD+=(--enforce-layer-guard)
 fi
-for changed in "${CHANGED_FILES[@]:-}"; do
-  IMPACT_CMD+=(--changed-file "$changed")
-done
+if [[ "${#CHANGED_FILES[@]}" -gt 0 ]]; then
+  for changed in "${CHANGED_FILES[@]}"; do
+    [[ -z "$changed" ]] && continue
+    IMPACT_CMD+=(--changed-file "$changed")
+  done
+fi
 
 bash skills/tech-planner/scripts/product_truth_validate.sh --project-root "$PROJECT_ROOT" --require-scenarios
 bash skills/tech-planner/scripts/goal_governance_validate.sh --project-root "$PROJECT_ROOT" --strict --require-scenarios
@@ -95,9 +98,12 @@ DAG_RUN_CMD=(
   .sigee/.runtime/dag/pipelines/default.pipeline.yml
   --changed-only
 )
-for changed in "${CHANGED_FILES[@]:-}"; do
-  DAG_RUN_CMD+=(--changed-file "$changed")
-done
+if [[ "${#CHANGED_FILES[@]}" -gt 0 ]]; then
+  for changed in "${CHANGED_FILES[@]}"; do
+    [[ -z "$changed" ]] && continue
+    DAG_RUN_CMD+=(--changed-file "$changed")
+  done
+fi
 SIGEE_RUNTIME_ROOT="${SIGEE_RUNTIME_ROOT:-.sigee/.runtime}" \
 SIGEE_VALIDATION_MODE="${SIGEE_VALIDATION_MODE:-framework}" \
   "${DAG_RUN_CMD[@]}"

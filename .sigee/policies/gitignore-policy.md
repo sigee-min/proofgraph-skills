@@ -28,6 +28,8 @@ It follows a deny-by-default model for `.sigee` to keep git history clean.
 
 ## Decision Resolution (Applied)
 
+- `.sigee/templates/**`: ignored by default in consumer repos.
+  - The skill-pack repository can keep curated seed templates used for runtime bootstrap parity.
 - `.sigee/reports/**`: ignored by default.
   - Release snapshots are tracked only when curated under `.sigee/migrations/release-report-snapshots/`.
 - `.sigee/evidence/**`: always ignored.
