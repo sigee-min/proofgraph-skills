@@ -21,6 +21,17 @@ Codex에서 쓰는 스킬 3종(`tech-planner`, `tech-developer`, `tech-scientist
 사용자가 매번 절차를 직접 지시하지 않아도, planner가 큐 상태와 검증 근거를 읽어 다음 실행을 결정합니다.
 developer와 scientist는 결과와 evidence를 review로 반환하고, `done`은 review 기준을 통과했을 때만 열립니다.
 
+## 엄격한 TDD와 개발 상태 관리
+
+이 스킬팩은 "구현 후 테스트"가 아니라 TDD 순서를 전제로 동작합니다.
+즉, 가능한 한 Red(실패 테스트) -> Green(최소 구현) -> Refactor(구조 개선) 흐름으로 작업을 진행하고,
+완료 판정은 테스트 통과 로그와 검증 근거를 기준으로 합니다.
+
+개발 상태도 텍스트 메모가 아니라 명시적인 상태 전이로 관리합니다.
+작업은 planner/developer/review 큐를 오가며 진행되고, `planner-review -> done` 게이트를 통과하기 전에는
+완료로 닫지 않습니다.
+이 규칙이 있어야 진행률 보고와 실제 제품 상태가 어긋나는 문제를 줄일 수 있습니다.
+
 ## 장점과 트레이드오프
 
 이 구조의 장점은 전역 목표와 실제 구현이 DAG/traceability로 묶여 방향 이탈이 줄어든다는 점입니다.
